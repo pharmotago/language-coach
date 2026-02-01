@@ -11,25 +11,25 @@ const SAFETY_SETTINGS = [
 ];
 
 export const model = genAI.getGenerativeModel({
-    model: "gemini-2.0-flash",
+    model: "gemini-1.5-pro",
     safetySettings: SAFETY_SETTINGS,
 });
 
 export const feedbackModel = genAI.getGenerativeModel({
-    model: "gemini-2.0-flash",
+    model: "gemini-1.5-pro",
     generationConfig: { responseMimeType: "application/json" },
     safetySettings: SAFETY_SETTINGS,
     systemInstruction: "You are a strict language tutor. Analyze the student's message for grammar errors and cultural faux pas. Output JSON: { hasError: boolean, feedback: string, culturalNote?: string }. accessing 'feedback' should give a short, helpful correction. If no error, hasError is false."
 });
 export const scenarioModel = genAI.getGenerativeModel({
-    model: "gemini-2.0-flash",
+    model: "gemini-1.5-pro",
     generationConfig: { responseMimeType: "application/json" },
     safetySettings: SAFETY_SETTINGS,
     systemInstruction: "You are an expert language teacher. Generate realistic roleplay scenarios for language learners. Output strict JSON with fields: id, title, description, context, difficulty (Beginner/Intermediate/Advanced), and icon (Lucide icon name)."
 });
 
 export const chatModel = genAI.getGenerativeModel({
-    model: "gemini-2.0-flash",
+    model: "gemini-1.5-pro",
     generationConfig: { responseMimeType: "application/json" },
     safetySettings: SAFETY_SETTINGS,
 });
