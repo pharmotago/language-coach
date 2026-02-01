@@ -6,6 +6,6 @@ export default function robots(): MetadataRoute.Robots {
             userAgent: '*',
             allow: '/',
         },
-        sitemap: 'https://thestoicdad.com/sitemap.xml',
+        sitemap: 'https://languagecoach.ai/sitemap.xml',
     };
 }

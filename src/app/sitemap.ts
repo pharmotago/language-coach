@@ -1,7 +1,7 @@
 import { MetadataRoute } from 'next';
 
 export default function sitemap(): MetadataRoute.Sitemap {
-    const baseUrl = 'https://thestoicdad.com';
+    const baseUrl = 'https://languagecoach.ai';
 
     return [
         {

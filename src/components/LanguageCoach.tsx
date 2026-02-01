@@ -409,7 +409,7 @@ export function LanguageCoach() {
     };
 
     const handleRegenerateLastResponse = () => {
-        console.log('Regenerating last response...');
+        // console.log('Regenerating last response...');
     };
 
     // Show setup modal if not initialized
@@ -580,6 +580,7 @@ export function LanguageCoach() {
                         onClick={() => setShowMistakeVault(true)}
                         className="btn-ghost text-sm px-3 py-2 text-rose-400 hover:text-rose-300 relative group"
                         title="Mistake Vault"
+                        aria-label="Open Mistake History"
                     >
                         <History className="w-4 h-4" />
                         <span className="sr-only">Mistakes</span>
@@ -589,6 +590,7 @@ export function LanguageCoach() {
                         onClick={() => setShowKeyboardHelp(!showKeyboardHelp)}
                         className="btn-ghost text-sm px-3 py-2"
                         title="Shortcuts"
+                        aria-label="Keyboard Shortcuts"
                     >
                         <Keyboard className="w-4 h-4" />
                     </button>
@@ -598,6 +600,7 @@ export function LanguageCoach() {
                         disabled={messages.length === 0}
                         className="btn-ghost text-sm px-3 py-2 disabled:opacity-50"
                         title="Export"
+                        aria-label="Export Conversation"
                     >
                         <Download className="w-4 h-4" />
                     </button>
@@ -605,6 +608,7 @@ export function LanguageCoach() {
                     <button
                         onClick={() => setShowScenarios(true)}
                         className="btn-ghost text-sm px-3 py-2 flex items-center gap-2"
+                        aria-label="Select Scenario"
                     >
                         <Sparkles className="w-4 h-4 text-amber-400" />
                         <span className="hidden sm:inline">Scenarios</span>
@@ -633,6 +637,7 @@ export function LanguageCoach() {
                         onClick={handleReset}
                         className="btn-ghost text-sm px-3 py-2"
                         title="Reset"
+                        aria-label="Reset Conversation"
                     >
                         <RotateCcw className="w-4 h-4" />
                     </button>
