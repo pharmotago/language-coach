@@ -253,7 +253,7 @@ export function LanguageCoach() {
             addMessage({
                 id: Date.now().toString(),
                 role: 'coach',
-                content: fallbackGreetings[targetLanguage.name] || `Hello! Ready to practice ${targetLanguage.name}?`,
+                content: `Greeting Error: ${err.message || 'Unknown error'}`,
                 timestamp: new Date()
             });
         } finally {
