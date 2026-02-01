@@ -45,6 +45,7 @@ const ScenarioSelector = dynamic(() => import('./ScenarioSelector').then(mod => 
 const ScenarioBuilder = dynamic(() => import('./ScenarioBuilder').then(mod => mod.ScenarioBuilder), { ssr: false });
 import { AICoachFeedback } from './AICoachFeedback';
 import { MistakeVault } from './MistakeVault';
+import { AmbientManager } from './AmbientManager';
 
 export function LanguageCoach() {
     const {
@@ -433,6 +434,7 @@ export function LanguageCoach() {
             <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 pointer-events-none" />
 
             {/* Notifications */}
+            <AmbientManager />
             {unlockedAchievement && (
                 <AchievementUnlockNotification
                     achievement={unlockedAchievement}
