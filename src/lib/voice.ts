@@ -67,7 +67,12 @@ class VoiceService {
         utterance.volume = options.volume || 1.0;
 
         const voice = options.voice || this.getVoiceForLanguage(langCode);
-        if (voice) {
+
+        if (!voice) {
+            console.warn(`[VoiceService] No voice found for language: ${langCode}. Available voices:`, this.voices.length);
+            // Attempt fallback to first available if strictly necessary, or just fail silent with log
+        } else {
+            console.log(`[VoiceService] Speaking with voice: ${voice.name} (${voice.lang})`);
             utterance.voice = voice;
         }
 

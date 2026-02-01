@@ -315,7 +315,8 @@ export function LanguageCoach() {
             {
                 "response": "Your response in ${targetLanguage.name}",
                 "translation": "English translation (optional)",
-                "feedback": "Correction if needed (optional)"
+                "feedback": "Correction if needed (optional)",
+                "cultureNote": { "title": "Cultural Insight", "content": "Fact regarding this context", "icon": "Globe" } (Optional: Include only if a relevant cultural fact arises)
             }
             `;
 
@@ -333,7 +334,7 @@ export function LanguageCoach() {
                 timestamp: new Date(),
                 translation: aiData.translation,
                 feedback: aiData.feedback || undefined,
-                // Culture note can be generated separately or added to the prompt later if needed
+                cultureNote: aiData.cultureNote || undefined
             };
 
             addMessage(coachMessage);
