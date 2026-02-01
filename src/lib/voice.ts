@@ -36,28 +36,36 @@ class VoiceService {
     }
 
     public getVoiceForLanguage(langCode: string): SpeechSynthesisVoice | null {
-        // Try to match exact locale first (e.g. 'es-ES')
+        // 1. Try exact match (e.g., 'es-ES')
         let voice = this.voices.find(v => v.lang === langCode);
 
-        // Fallback to language code only (e.g. 'es')
+        // 2. Try Google Cloud voice for that language (better quality)
+        if (!voice) {
+            voice = this.voices.find(v => v.lang.startsWith(langCode.split('-')[0]) && v.name.includes('Google'));
+        }
+
+        // 3. Try any voice matching the language code prefix (e.g., 'es' matches 'es-MX')
         if (!voice) {
             const shortCode = langCode.split('-')[0];
             voice = this.voices.find(v => v.lang.startsWith(shortCode));
         }
 
-        // Prefer "Google" voices if available (usually higher quality on Chrome)
-        if (!voice && this.voices.length > 0) {
-            const premiumVoice = this.voices.find(v => v.lang.startsWith(langCode.split('-')[0]) && v.name.includes('Google'));
-            if (premiumVoice) return premiumVoice;
+        // 4. Microsoft voices (common on Windows)
+        if (!voice) {
+            const shortCode = langCode.split('-')[0];
+            voice = this.voices.find(v => v.lang.startsWith(shortCode) && v.name.includes('Microsoft'));
         }
 
-        return voice || this.voices[0] || null;
+        return voice || null;
     }
 
     public speak(text: string, langCode: string, options: VoiceOptions = {}) {
-        if (!this.synthesis) return;
+        if (!this.synthesis) {
+            console.error('[VoiceService] SpeechSynthesis not supported');
+            return;
+        }
 
-        // Cancel current speech
+        // Cancel current speech to prevent overlapping
         this.synthesis.cancel();
 
         const utterance = new SpeechSynthesisUtterance(text);

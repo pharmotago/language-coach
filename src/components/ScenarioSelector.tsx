@@ -91,18 +91,20 @@ export function ScenarioSelector({ currentLevel, onSelect, onClose }: ScenarioSe
                             {/* Custom Scenario Button */}
                             <button
                                 onClick={() => setMode('create')}
-                                className="glass-card-light p-5 rounded-xl text-left hover:bg-amber-500/10 hover:border-amber-500/50 transition-all duration-200 group border-dashed border-2 border-slate-700 h-full"
+                                className="relative overflow-hidden rounded-xl text-left transition-all duration-300 group h-full border border-amber-500/30 hover:border-amber-500/60 p-5 bg-gradient-to-br from-slate-900 via-slate-800 to-amber-900/10 hover:shadow-[0_0_30px_-5px_rgba(245,158,11,0.3)]"
                             >
-                                <div className="flex items-center gap-4 h-full">
-                                    <div className="w-12 h-12 rounded-lg bg-amber-500/20 flex items-center justify-center flex-shrink-0">
-                                        <Icons.Sparkles className="w-6 h-6 text-amber-500" />
+                                <div className="absolute inset-0 bg-amber-500/5 opacity-0 group-hover:opacity-100 transition-opacity animate-pulse-slow" />
+
+                                <div className="relative z-10 flex items-center gap-4 h-full">
+                                    <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center flex-shrink-0 shadow-lg group-hover:scale-110 transition-transform duration-300">
+                                        <Icons.Sparkles className="w-6 h-6 text-white animate-pulse" />
                                     </div>
                                     <div>
-                                        <h3 className="font-bold text-white group-hover:text-amber-400 transition-colors">
+                                        <h3 className="font-bold text-transparent bg-clip-text bg-gradient-to-r from-amber-200 to-amber-500 mb-1">
                                             Infinite Scenarios
                                         </h3>
-                                        <p className="text-sm text-slate-400 group-hover:text-amber-200/70">
-                                            Generate any situation with AI...
+                                        <p className="text-sm text-slate-400 group-hover:text-amber-100/70 transition-colors">
+                                            Generate ANY situation with AI...
                                         </p>
                                     </div>
                                 </div>
