@@ -9,7 +9,7 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { Send, RotateCcw, Sparkles, Download, Keyboard, AlertCircle, Trophy, BarChart3, Book, Flame, X, ShoppingBag, Crown, Globe, History, Coins } from 'lucide-react';
 import { useLanguageStore } from '@/store/useLanguageStore';
-import { model } from '@/lib/gemini';
+import { model, chatModel } from '@/lib/gemini';
 import { Message } from '@/types/languageTypes';
 import { SetupModal } from './SetupModal';
 import { ChatMessage } from './ChatMessage';
@@ -236,7 +236,8 @@ export function LanguageCoach() {
 
             addMessage(coachMessage);
         } catch (err: any) {
-            console.error(err);
+            console.error("AI Greeting Error:", err);
+            if (err.message) console.error("Error Details:", err.message);
             // Silent fail or default fallback
             const fallbackGreetings: Record<string, string> = {
                 'Spanish': '¡Hola! ¿Cómo estás?',
@@ -352,6 +353,9 @@ export function LanguageCoach() {
             });
 
         } catch (err: any) {
+            console.error("AI Error Details:", err);
+            if (err.message) console.error("Error Message:", err.message);
+
             if (err.name !== 'AbortError') {
                 setError('Failed to connect to AI Tutor. Please check your API Key.');
                 console.error(err);

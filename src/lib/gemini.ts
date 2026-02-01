@@ -17,3 +17,8 @@ export const scenarioModel = genAI.getGenerativeModel({
     generationConfig: { responseMimeType: "application/json" },
     systemInstruction: "You are an expert language teacher. Generate realistic roleplay scenarios for language learners. Output strict JSON with fields: id, title, description, context, difficulty (Beginner/Intermediate/Advanced), and icon (Lucide icon name)."
 });
+
+export const chatModel = genAI.getGenerativeModel({
+    model: "gemini-1.5-flash",
+    generationConfig: { responseMimeType: "application/json" },
+});
