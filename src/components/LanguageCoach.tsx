@@ -6,36 +6,45 @@
 'use client';
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Send, RotateCcw, Sparkles, Download, Keyboard, AlertCircle, Trophy, BarChart3, Book, Flame, X, ShoppingBag, Crown } from 'lucide-react';
+import { motion, useScroll, useTransform } from 'framer-motion';
+import { Send, RotateCcw, Sparkles, Download, Keyboard, AlertCircle, Trophy, BarChart3, Book, Flame, X, ShoppingBag, Crown, Globe, History, Coins } from 'lucide-react';
 import { useLanguageStore } from '@/store/useLanguageStore';
+import { model } from '@/lib/gemini';
 import { Message } from '@/types/languageTypes';
 import { SetupModal } from './SetupModal';
 import { ChatMessage } from './ChatMessage';
 import { VoiceInput } from './VoiceInput';
-import { ScenarioSelector } from './ScenarioSelector';
-import { ScenarioBuilder } from './ScenarioBuilder';
 import { ConversationStarters } from './ConversationStarters';
 import { QuickReplies } from './QuickReplies';
 import { ProgressPanel } from './ProgressPanel';
 import { MessageSkeleton } from './LoadingSkeletons';
 import { useLanguageCoachShortcuts, KeyboardShortcutsHelp } from '@/hooks/useLanguageCoachShortcuts';
 import { exportConversation } from '@/lib/conversationExport';
+import { shareReferral } from '@/lib/referral';
 
 // Phase 2 Integrations
 import { AchievementsList, AchievementUnlockNotification, DEFAULT_ACHIEVEMENTS, Achievement } from './AchievementSystem';
 import { XPBar, LevelUpNotification, XPGainToast, calculateLevel } from './XPSystem';
 import { StreakDisplay, calculateStreak, CalendarHeatmap } from './StreakTracker';
-import { VocabularyDashboard } from './VocabularyFlashcards';
 
-import { AnalyticsDashboard } from './AnalyticsDashboard';
 import { useConversationHistory } from '@/lib/conversationHistory';
 import { useSound } from '@/contexts/SoundContext';
 import { triggerHaptic, HapticPatterns } from '@/lib/haptics';
-import { LessonGenerator } from './LessonGenerator';
 import { generateCultureNote } from '@/lib/aiCulture';
-import { Shop } from './Shop';
-import { Leaderboard } from './Leaderboard';
-import { AvatarCustomizer } from './AvatarCustomizer';
+import { analytics } from '@/lib/analytics';
+import dynamic from 'next/dynamic';
+
+// Performance: Dynamic Imports for heavy dashboards and secondary views
+const AnalyticsDashboard = dynamic(() => import('./AnalyticsDashboard').then(mod => mod.AnalyticsDashboard), { ssr: false });
+const VocabularyDashboard = dynamic(() => import('./VocabularyFlashcards').then(mod => mod.VocabularyDashboard), { ssr: false });
+const LessonGenerator = dynamic(() => import('./LessonGenerator').then(mod => mod.LessonGenerator), { ssr: false });
+const Shop = dynamic(() => import('./Shop').then(mod => mod.Shop), { ssr: false });
+const Leaderboard = dynamic(() => import('./Leaderboard').then(mod => mod.Leaderboard), { ssr: false });
+const AvatarCustomizer = dynamic(() => import('./AvatarCustomizer').then(mod => mod.AvatarCustomizer), { ssr: false });
+const ScenarioSelector = dynamic(() => import('./ScenarioSelector').then(mod => mod.ScenarioSelector), { ssr: false });
+const ScenarioBuilder = dynamic(() => import('./ScenarioBuilder').then(mod => mod.ScenarioBuilder), { ssr: false });
+import { AICoachFeedback } from './AICoachFeedback';
+import { MistakeVault } from './MistakeVault';
 
 export function LanguageCoach() {
     const {
@@ -45,9 +54,12 @@ export function LanguageCoach() {
         isInitialized,
         setLanguage,
         setSkillLevel,
-        setScenario,
         addMessage,
         resetConversation,
+        coins,
+        avatarConfig,
+        currentScenario, // Ensure this is present
+        setScenario,
         initialize
     } = useLanguageStore();
 
@@ -62,6 +74,7 @@ export function LanguageCoach() {
     const [showScenarioBuilder, setShowScenarioBuilder] = useState(false);
     const [showAvatarCustomizer, setShowAvatarCustomizer] = useState(false);
     const [showKeyboardHelp, setShowKeyboardHelp] = useState(false);
+    const [showMistakeVault, setShowMistakeVault] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [activeView, setActiveView] = useState<'chat' | 'achievements' | 'analytics' | 'vocabulary' | 'lessons' | 'shop' | 'leaderboard'>('chat');
 
@@ -79,7 +92,11 @@ export function LanguageCoach() {
         new Date(Date.now() - 1000 * 60 * 60 * 24 * 2),
         new Date(Date.now() - 1000 * 60 * 60 * 24 * 3)
     ]);
-
+    // Scroll Animation Hooks
+    const { scrollY } = useScroll();
+    const headerBg = useTransform(scrollY, [0, 50], ["rgba(15, 23, 42, 0.4)", "rgba(15, 23, 42, 0.9)"]);
+    const headerBlur = useTransform(scrollY, [0, 50], ["blur(8px)", "blur(16px)"]);
+    const headerPadding = useTransform(scrollY, [0, 50], ["1.5rem", "1rem"]);
 
     // Persistence Hook
     const { saveConversation } = useConversationHistory();
@@ -226,8 +243,6 @@ export function LanguageCoach() {
         // Sensory feedback
         playSound('send');
         triggerHaptic(HapticPatterns.light);
-
-        // Gamification: XP for message
         triggerXPGain(10, 'Message Sent');
 
         // Streak: Update if first time today
@@ -241,23 +256,43 @@ export function LanguageCoach() {
         abortControllerRef.current = new AbortController();
 
         try {
-            const mockResponse = generateMockResponse(
-                targetLanguage.name,
-                skillLevel,
-                inputValue,
-                messages.length
-            );
+            // Real AI Generation
+            const prompt = `
+            Act as a native ${targetLanguage.name} language tutor. 
+            User Skill Level: ${skillLevel}.
+            Current Context: ${currentScenario ? currentScenario.context : 'Casual conversation'}.
+            
+            User Message: "${userMessage.content}"
+            
+            Instructions:
+            1. Respond naturally in ${targetLanguage.name}.
+            2. Match the user's skill level.
+            3. Provide a brief English translation of your response in parentheses at the end if the user is a beginner.
+            4. If the user makes a mistake, correct it gently in a separate "feedback" section.
+            
+            Output JSON format ONLY:
+            {
+                "response": "Your response in ${targetLanguage.name}",
+                "translation": "English translation (optional)",
+                "feedback": "Correction if needed (optional)"
+            }
+            `;
 
-            await delay(1500);
+            const result = await model.generateContent(prompt);
+            const responseText = result.response.text();
+
+            // Clean up code blocks if present
+            const cleanJson = responseText.replace(/```json|```/g, '').trim();
+            const aiData = JSON.parse(cleanJson);
 
             const coachMessage: Message = {
                 id: (Date.now() + 1).toString(),
                 role: 'coach',
-                content: mockResponse.response,
+                content: aiData.response,
                 timestamp: new Date(),
-                translation: mockResponse.translation,
-                feedback: mockResponse.feedback,
-                cultureNote: generateCultureNote(mockResponse.response, targetLanguage) || undefined
+                translation: aiData.translation,
+                feedback: aiData.feedback,
+                // Culture note can be generated separately or added to the prompt later if needed
             };
 
             addMessage(coachMessage);
@@ -265,7 +300,7 @@ export function LanguageCoach() {
             triggerHaptic(HapticPatterns.medium);
             checkAchievements(messages.length + 1);
 
-            // Persistence: Save conversation
+            // Persistence
             saveConversation({
                 id: Date.now().toString(),
                 language: targetLanguage.name,
@@ -278,14 +313,22 @@ export function LanguageCoach() {
 
         } catch (err: any) {
             if (err.name !== 'AbortError') {
-                setError('Failed to get response. Please try again.');
+                setError('Failed to connect to AI Tutor. Please check your API Key.');
                 console.error(err);
+
+                // Fallback for demo purposes if API fails
+                addMessage({
+                    id: Date.now().toString(),
+                    role: 'coach',
+                    content: "I'm having trouble connecting to the cloud. Please check your internet or API key.",
+                    timestamp: new Date()
+                });
             }
         } finally {
             setIsLoading(false);
             abortControllerRef.current = null;
         }
-    }, [inputValue, targetLanguage, skillLevel, isLoading, addMessage, messages.length, xp, streakHistory]);
+    }, [inputValue, targetLanguage, skillLevel, isLoading, messages, currentScenario, streakHistory, addMessage, playSound, triggerHaptic, triggerXPGain, checkAchievements, saveConversation]);
 
     const handleVoiceTranscript = (text: string) => {
         setInputValue(text);
@@ -365,14 +408,23 @@ export function LanguageCoach() {
                 />
             )}
 
-            {/* Header */}
-            <header className="glass-card border-b border-slate-800 px-6 py-4 flex items-center justify-between sticky top-0 z-40">
+            {/* Dynamic Imperial Header */}
+            <motion.header
+                style={{
+                    backgroundColor: headerBg,
+                    backdropFilter: headerBlur,
+                    paddingTop: headerPadding,
+                    paddingBottom: headerPadding
+                }}
+                className="border-b border-slate-800 px-6 flex items-center justify-between sticky top-0 z-40 transition-all duration-300"
+            >
                 <div className="flex items-center gap-6">
                     <div className="flex items-center gap-3">
                         <button
                             onClick={() => setShowAvatarCustomizer(true)}
-                            className="w-10 h-10 rounded-full bg-slate-800 border-2 border-slate-700 hover:border-amber-500 transition-all flex items-center justify-center text-2xl overflow-hidden"
+                            className="w-10 h-10 rounded-full bg-slate-800 border-2 border-slate-700 hover:border-amber-500 transition-all flex items-center justify-center text-2xl overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500"
                             title="Customize Avatar"
+                            aria-label="Customize Avatar"
                         >
                             {/* Simple avatar preview */}
                             <div className="w-full h-full bg-fuchsia-500 flex items-center justify-center text-white font-bold text-sm">
@@ -411,57 +463,80 @@ export function LanguageCoach() {
 
                 <div className="flex items-center gap-2">
                     {/* View Toggles */}
-                    <div className="flex bg-slate-900/50 rounded-lg p-1 mr-2 border border-slate-800">
+                    <nav className="flex bg-slate-900/50 rounded-lg p-1 mr-2 border border-slate-800" aria-label="Main Navigation">
                         <button
                             onClick={() => setActiveView('chat')}
-                            className={`p-2 rounded-md transition-all ${activeView === 'chat' ? 'bg-slate-700 text-white shadow-sm' : 'text-slate-400 hover:text-white'}`}
+                            className={`p-2 rounded-md transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 ${activeView === 'chat' ? 'bg-slate-700 text-white shadow-sm' : 'text-slate-400 hover:text-white'}`}
                             title="Chat"
+                            aria-label="View Chat"
+                            aria-pressed={activeView === 'chat'}
                         >
-                            <Send className="w-4 h-4" />
+                            <Send className="w-4 h-4" aria-hidden="true" />
                         </button>
                         <button
                             onClick={() => setActiveView('lessons')}
-                            className={`p-2 rounded-md transition-all ${activeView === 'lessons' ? 'bg-slate-700 text-white shadow-sm' : 'text-slate-400 hover:text-white'}`}
+                            className={`p-2 rounded-md transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 ${activeView === 'lessons' ? 'bg-slate-700 text-white shadow-sm' : 'text-slate-400 hover:text-white'}`}
                             title="Lessons"
+                            aria-label="View Lessons"
+                            aria-pressed={activeView === 'lessons'}
                         >
-                            <Sparkles className="w-4 h-4" />
+                            <Sparkles className="w-4 h-4" aria-hidden="true" />
                         </button>
                         <button
                             onClick={() => setActiveView('vocabulary')}
-                            className={`p-2 rounded-md transition-all ${activeView === 'vocabulary' ? 'bg-slate-700 text-white shadow-sm' : 'text-slate-400 hover:text-white'}`}
+                            className={`p-2 rounded-md transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 ${activeView === 'vocabulary' ? 'bg-slate-700 text-white shadow-sm' : 'text-slate-400 hover:text-white'}`}
                             title="Vocabulary"
+                            aria-label="View Vocabulary"
+                            aria-pressed={activeView === 'vocabulary'}
                         >
-                            <Book className="w-4 h-4" />
+                            <Book className="w-4 h-4" aria-hidden="true" />
                         </button>
                         <button
                             onClick={() => setActiveView('achievements')}
-                            className={`p-2 rounded-md transition-all ${activeView === 'achievements' ? 'bg-slate-700 text-white shadow-sm' : 'text-slate-400 hover:text-white'}`}
+                            className={`p-2 rounded-md transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 ${activeView === 'achievements' ? 'bg-slate-700 text-white shadow-sm' : 'text-slate-400 hover:text-white'}`}
                             title="Achievements"
+                            aria-label="View Achievements"
+                            aria-pressed={activeView === 'achievements'}
                         >
-                            <Trophy className="w-4 h-4" />
+                            <Trophy className="w-4 h-4" aria-hidden="true" />
                         </button>
                         <button
                             onClick={() => setActiveView('leaderboard')}
-                            className={`p-2 rounded-md transition-all ${activeView === 'leaderboard' ? 'bg-slate-700 text-white shadow-sm' : 'text-slate-400 hover:text-white'}`}
+                            className={`p-2 rounded-md transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 ${activeView === 'leaderboard' ? 'bg-slate-700 text-white shadow-sm' : 'text-slate-400 hover:text-white'}`}
                             title="Leaderboard"
+                            aria-label="View Leaderboard"
+                            aria-pressed={activeView === 'leaderboard'}
                         >
-                            <Crown className="w-4 h-4 text-amber-500" />
+                            <Crown className="w-4 h-4 text-amber-500" aria-hidden="true" />
                         </button>
                         <button
                             onClick={() => setActiveView('analytics')}
-                            className={`p-2 rounded-md transition-all ${activeView === 'analytics' ? 'bg-slate-700 text-white shadow-sm' : 'text-slate-400 hover:text-white'}`}
+                            className={`p-2 rounded-md transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 ${activeView === 'analytics' ? 'bg-slate-700 text-white shadow-sm' : 'text-slate-400 hover:text-white'}`}
                             title="Analytics"
+                            aria-label="View Analytics"
+                            aria-pressed={activeView === 'analytics'}
                         >
-                            <BarChart3 className="w-4 h-4" />
+                            <BarChart3 className="w-4 h-4" aria-hidden="true" />
                         </button>
                         <button
                             onClick={() => setActiveView('shop')}
-                            className={`p-2 rounded-md transition-all ${activeView === 'shop' ? 'bg-slate-700 text-white shadow-sm' : 'text-slate-400 hover:text-white'}`}
+                            className={`p-2 rounded-md transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 ${activeView === 'shop' ? 'bg-slate-700 text-white shadow-sm' : 'text-slate-400 hover:text-white'}`}
                             title="Item Shop"
+                            aria-label="View Item Shop"
+                            aria-pressed={activeView === 'shop'}
                         >
-                            <ShoppingBag className="w-4 h-4 text-emerald-400" />
+                            <ShoppingBag className="w-4 h-4 text-emerald-400" aria-hidden="true" />
                         </button>
-                    </div>
+                    </nav>
+
+                    <button
+                        onClick={() => setShowMistakeVault(true)}
+                        className="btn-ghost text-sm px-3 py-2 text-rose-400 hover:text-rose-300 relative group"
+                        title="Mistake Vault"
+                    >
+                        <History className="w-4 h-4" />
+                        <span className="sr-only">Mistakes</span>
+                    </button>
 
                     <button
                         onClick={() => setShowKeyboardHelp(!showKeyboardHelp)}
@@ -489,6 +564,25 @@ export function LanguageCoach() {
                     </button>
 
                     <button
+                        onClick={async () => {
+                            const result = await shareReferral('user123'); // Demo ID
+                            if (result.success) {
+                                playSound('success');
+                                triggerHaptic(HapticPatterns.success);
+                                analytics.track('referral_shared', { method: result.method });
+                                setXp(prev => prev + 500);
+                                setXpGain({ amount: 500, reason: 'Referral Shared' });
+                            }
+                        }}
+                        className="btn-ghost text-sm px-3 py-2 flex items-center gap-2 text-amber-500 font-bold"
+                        title="Invite Friend"
+                        aria-label="Invite Friend for 500 XP"
+                    >
+                        <Globe className="w-4 h-4" />
+                        <span className="hidden lg:inline">Invite Friend (+500 XP)</span>
+                    </button>
+
+                    <button
                         onClick={handleReset}
                         className="btn-ghost text-sm px-3 py-2"
                         title="Reset"
@@ -496,7 +590,7 @@ export function LanguageCoach() {
                         <RotateCcw className="w-4 h-4" />
                     </button>
                 </div>
-            </header>
+            </motion.header>
 
             {/* Keyboard Shortcuts Help */}
             {showKeyboardHelp && (
@@ -647,9 +741,13 @@ export function LanguageCoach() {
                                 <textarea
                                     ref={inputRef}
                                     value={inputValue}
-                                    onChange={(e) => setInputValue(e.target.value)}
+                                    onChange={(e) => {
+                                        setInputValue(e.target.value);
+                                        playSound('typing');
+                                    }}
                                     onKeyDown={handleKeyPress}
                                     placeholder={`Type your message in ${targetLanguage.name}...`}
+                                    aria-label={`Message in ${targetLanguage.name}`}
                                     disabled={isLoading}
                                     rows={1}
                                     className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-slate-200 placeholder-slate-600 resize-none focus:outline-none focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500/50 transition-all disabled:opacity-50 min-h-[50px] max-h-[120px]"
@@ -682,10 +780,6 @@ export function LanguageCoach() {
                     currentLevel={skillLevel}
                     onSelect={setScenario}
                     onClose={() => setShowScenarios(false)}
-                    onCreateCustom={() => {
-                        setShowScenarios(false);
-                        setShowScenarioBuilder(true);
-                    }}
                 />
             )}
 
@@ -704,6 +798,14 @@ export function LanguageCoach() {
             {showAvatarCustomizer && (
                 <AvatarCustomizer onClose={() => setShowAvatarCustomizer(false)} />
             )}
+
+            {/* Mistake Vault Modal */}
+            {showMistakeVault && (
+                <MistakeVault onClose={() => setShowMistakeVault(false)} />
+            )}
+
+            {/* AI Real-time Feedback */}
+            {targetLanguage && <AICoachFeedback messages={messages} targetLanguage={targetLanguage.name} />}
         </div>
     );
 }

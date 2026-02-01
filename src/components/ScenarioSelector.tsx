@@ -4,110 +4,196 @@
 
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import * as Icons from 'lucide-react';
 import { Scenario, SkillLevel } from '@/types/languageTypes';
 import { SCENARIOS } from '@/lib/languageData';
 import { cn } from '@/lib/utils';
+import { scenarioModel } from '@/lib/gemini';
 
 interface ScenarioSelectorProps {
     currentLevel: SkillLevel;
     onSelect: (scenario: Scenario) => void;
     onClose: () => void;
-    onCreateCustom?: () => void;
 }
 
-export function ScenarioSelector({ currentLevel, onSelect, onClose, onCreateCustom }: ScenarioSelectorProps) {
+export function ScenarioSelector({ currentLevel, onSelect, onClose }: ScenarioSelectorProps) {
+    const [mode, setMode] = useState<'select' | 'create'>('select');
+    const [customTopic, setCustomTopic] = useState('');
+    const [isGenerating, setIsGenerating] = useState(false);
+    const [error, setError] = useState('');
+
     // Filter scenarios appropriate for current level
     const suitableScenarios = SCENARIOS.filter(scenario => {
         const levelOrder = { Beginner: 1, Intermediate: 2, Advanced: 3 };
         return levelOrder[scenario.difficulty] <= levelOrder[currentLevel];
     });
 
+    const handleGenerate = async () => {
+        if (!customTopic.trim()) return;
+
+        setIsGenerating(true);
+        setError('');
+
+        try {
+            const prompt = `Generate a roleplay scenario for a language learner about: "${customTopic}". The difficulty should be "${currentLevel}".`;
+            const result = await scenarioModel.generateContent(prompt);
+            const response = result.response;
+            const text = response.text();
+
+            const data = JSON.parse(text);
+
+            // Ensure ID is unique
+            const newScenario: Scenario = {
+                ...data,
+                id: `custom_${Date.now()}`,
+                difficulty: currentLevel // Enforce requested level
+            };
+
+            onSelect(newScenario);
+            onClose();
+        } catch (err) {
+            console.error("Generation Error:", err);
+            setError("Failed to generate scenario. Please try again.");
+        } finally {
+            setIsGenerating(false);
+        }
+    };
+
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
-            <div className="glass-card max-w-3xl w-full max-h-[80vh] overflow-hidden rounded-2xl border border-slate-800 shadow-2xl animate-in zoom-in-95 duration-300">
+            <div className="glass-card max-w-3xl w-full max-h-[80vh] overflow-hidden rounded-2xl border border-slate-800 shadow-2xl animate-in zoom-in-95 duration-300 flex flex-col">
+
                 {/* Header */}
-                <div className="px-6 py-5 border-b border-slate-800">
-                    <h2 className="text-2xl font-bold text-white mb-1">
-                        Choose a Scenario
-                    </h2>
-                    <p className="text-sm text-slate-400">
-                        Practice in a real-world context to improve faster
-                    </p>
+                <div className="px-6 py-5 border-b border-slate-800 flex justify-between items-center">
+                    <div>
+                        <h2 className="text-2xl font-bold text-white mb-1">
+                            {mode === 'select' ? 'Choose a Scenario' : 'Create Custom Scenario'}
+                        </h2>
+                        <p className="text-sm text-slate-400">
+                            {mode === 'select' ? 'Practice in a real-world context' : 'Powered by Gemini AI 🧠'}
+                        </p>
+                    </div>
+                    {mode === 'create' && (
+                        <button
+                            onClick={() => setMode('select')}
+                            className="text-slate-400 hover:text-white"
+                        >
+                            Back
+                        </button>
+                    )}
                 </div>
 
-                {/* Scenarios Grid */}
-                <div className="p-6 overflow-y-auto max-h-[60vh]">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {/* Custom Scenario Button */}
-                        <button
-                            onClick={() => {
-                                if (onCreateCustom) onCreateCustom();
-                            }}
-                            className="glass-card-light p-5 rounded-xl text-left hover:bg-amber-500/10 hover:border-amber-500/50 transition-all duration-200 group border-dashed border-2 border-slate-700"
-                        >
-                            <div className="flex items-center gap-4 h-full">
-                                <div className="w-12 h-12 rounded-lg bg-amber-500/20 flex items-center justify-center flex-shrink-0">
-                                    <Icons.Plus className="w-6 h-6 text-amber-500" />
-                                </div>
-                                <div>
-                                    <h3 className="font-bold text-white group-hover:text-amber-400 transition-colors">
-                                        Create Custom
-                                    </h3>
-                                    <p className="text-sm text-slate-400">
-                                        Type any situation...
-                                    </p>
-                                </div>
-                            </div>
-                        </button>
-
-                        {suitableScenarios.map((scenario) => {
-                            const IconComponent = (Icons as any)[scenario.icon] || Icons.MessageCircle;
-
-                            return (
-                                <button
-                                    key={scenario.id}
-                                    onClick={() => {
-                                        onSelect(scenario);
-                                        onClose();
-                                    }}
-                                    className="glass-card-light p-5 rounded-xl text-left hover:bg-white/10 hover:border-amber-500/30 transition-all duration-200 group"
-                                >
-                                    <div className="flex items-start gap-4">
-                                        <div className="w-12 h-12 rounded-lg bg-amber-500/10 flex items-center justify-center flex-shrink-0 group-hover:bg-amber-500/20 transition-colors">
-                                            <IconComponent className="w-6 h-6 text-amber-400" />
-                                        </div>
-
-                                        <div className="flex-1">
-                                            <div className="flex items-center gap-2 mb-1">
-                                                <h3 className="font-bold text-white group-hover:text-amber-400 transition-colors">
-                                                    {scenario.title}
-                                                </h3>
-                                                <span className={cn(
-                                                    "text-xs px-2 py-0.5 rounded-full font-medium",
-                                                    scenario.difficulty === 'Beginner' && "bg-emerald-500/10 text-emerald-400 border border-emerald-500/30",
-                                                    scenario.difficulty === 'Intermediate' && "bg-amber-500/10 text-amber-400 border border-amber-500/30",
-                                                    scenario.difficulty === 'Advanced' && "bg-red-500/10 text-red-400 border border-red-500/30"
-                                                )}>
-                                                    {scenario.difficulty}
-                                                </span>
-                                            </div>
-                                            <p className="text-sm text-slate-400 leading-relaxed">
-                                                {scenario.description}
-                                            </p>
-                                        </div>
+                {/* Content */}
+                <div className="p-6 overflow-y-auto max-h-[60vh] flex-1">
+                    {mode === 'select' ? (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {/* Custom Scenario Button */}
+                            <button
+                                onClick={() => setMode('create')}
+                                className="glass-card-light p-5 rounded-xl text-left hover:bg-amber-500/10 hover:border-amber-500/50 transition-all duration-200 group border-dashed border-2 border-slate-700 h-full"
+                            >
+                                <div className="flex items-center gap-4 h-full">
+                                    <div className="w-12 h-12 rounded-lg bg-amber-500/20 flex items-center justify-center flex-shrink-0">
+                                        <Icons.Sparkles className="w-6 h-6 text-amber-500" />
                                     </div>
+                                    <div>
+                                        <h3 className="font-bold text-white group-hover:text-amber-400 transition-colors">
+                                            Infinite Scenarios
+                                        </h3>
+                                        <p className="text-sm text-slate-400 group-hover:text-amber-200/70">
+                                            Generate any situation with AI...
+                                        </p>
+                                    </div>
+                                </div>
+                            </button>
+
+                            {suitableScenarios.map((scenario) => {
+                                const IconComponent = (Icons as any)[scenario.icon] || Icons.MessageCircle;
+                                return (
+                                    <button
+                                        key={scenario.id}
+                                        onClick={() => { onSelect(scenario); onClose(); }}
+                                        className="glass-card-light p-5 rounded-xl text-left hover:bg-white/10 hover:border-amber-500/30 transition-all duration-200 group"
+                                    >
+                                        <div className="flex items-start gap-4">
+                                            <div className="w-12 h-12 rounded-lg bg-amber-500/10 flex items-center justify-center flex-shrink-0 group-hover:bg-amber-500/20 transition-colors">
+                                                <IconComponent className="w-6 h-6 text-amber-400" />
+                                            </div>
+                                            <div className="flex-1">
+                                                <div className="flex items-center gap-2 mb-1">
+                                                    <h3 className="font-bold text-white group-hover:text-amber-400 transition-colors">{scenario.title}</h3>
+                                                    <span className={cn(
+                                                        "text-xs px-2 py-0.5 rounded-full font-medium",
+                                                        scenario.difficulty === 'Beginner' && "bg-emerald-500/10 text-emerald-400 border border-emerald-500/30",
+                                                        scenario.difficulty === 'Intermediate' && "bg-amber-500/10 text-amber-400 border border-amber-500/30",
+                                                        scenario.difficulty === 'Advanced' && "bg-red-500/10 text-red-400 border border-red-500/30"
+                                                    )}>{scenario.difficulty}</span>
+                                                </div>
+                                                <p className="text-sm text-slate-400 leading-relaxed line-clamp-2">{scenario.description}</p>
+                                            </div>
+                                        </div>
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    ) : (
+                        <div className="flex flex-col gap-6 items-center justify-center h-full py-8">
+                            <div className="w-full max-w-md space-y-4">
+                                <label className="block text-sm font-medium text-slate-300">
+                                    What scenario do you want to practice?
+                                </label>
+                                <div className="relative">
+                                    <input
+                                        type="text"
+                                        value={customTopic}
+                                        onChange={(e) => setCustomTopic(e.target.value)}
+                                        placeholder="e.g., Returning a defective robot not knowing the receipt is missing..."
+                                        className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-4 text-white focus:outline-none focus:ring-2 focus:ring-amber-500/50"
+                                        disabled={isGenerating}
+                                        onKeyDown={(e) => e.key === 'Enter' && handleGenerate()}
+                                    />
+                                    <Icons.Bot className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 w-5 h-5" />
+                                </div>
+                                {error && <p className="text-red-400 text-sm">{error}</p>}
+                                <button
+                                    onClick={handleGenerate}
+                                    disabled={!customTopic.trim() || isGenerating}
+                                    className="w-full bg-amber-500 hover:bg-amber-400 text-slate-900 font-bold py-4 rounded-xl transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                                >
+                                    {isGenerating ? (
+                                        <>
+                                            <Icons.Loader2 className="animate-spin w-5 h-5" />
+                                            Generating Scenario...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Icons.Wand2 className="w-5 h-5" />
+                                            Create Simulation
+                                        </>
+                                    )}
                                 </button>
-                            );
-                        })}
-                    </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-3 w-full max-w-md mt-4">
+                                {["Ordering street food", "Discussing philosophy", "Flirting at a bar", "Police traffic stop"].map(topic => (
+                                    <button
+                                        key={topic}
+                                        onClick={() => setCustomTopic(topic)}
+                                        className="text-xs bg-slate-800/50 hover:bg-slate-800 text-slate-400 hover:text-white py-2 px-3 rounded-lg transition-colors border border-slate-700/50"
+                                    >
+                                        {topic}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 {/* Footer */}
                 <div className="px-6 py-4 border-t border-slate-800 flex justify-between items-center">
                     <p className="text-xs text-slate-500">
-                        {suitableScenarios.length} scenarios available for your level
+                        {mode === 'select' ? `${suitableScenarios.length} scenarios available` : 'AI Generation Active'}
                     </p>
                     <button
                         onClick={onClose}

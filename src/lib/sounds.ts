@@ -5,7 +5,7 @@
 // We will use AudioContext for procedural sounds to keep external deps low
 // But we'll structure it to allow file assets later if needed.
 
-export type SoundType = 'send' | 'receive' | 'success' | 'error' | 'click' | 'hover' | 'unlock';
+export type SoundType = 'send' | 'receive' | 'success' | 'error' | 'click' | 'hover' | 'unlock' | 'typing';
 
 class SoundService {
     private audioContext: AudioContext | null = null;
@@ -87,11 +87,15 @@ class SoundService {
                 this.playTone(140, 'sawtooth', 0.2, 0.1);
                 break;
             case 'unlock':
-                // Magical arpeggio
+                // High-tech sync up
                 const now = 0;
-                [440, 554, 659, 880, 1108, 1318, 1760].forEach((freq, i) => {
-                    this.playTone(freq, 'sine', 0.3, now + (i * 0.08));
+                [880, 1108, 1318, 1760].forEach((freq, i) => {
+                    this.playTone(freq, 'square', 0.1, now + (i * 0.05));
                 });
+                break;
+            case 'typing':
+                // Digital blip
+                this.playTone(1200 + Math.random() * 400, 'sine', 0.02);
                 break;
         }
     }

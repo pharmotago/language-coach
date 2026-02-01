@@ -112,3 +112,11 @@ export interface ConversationState {
     currentScenario: Scenario | null;
     isInitialized: boolean;
 }
+
+export interface Mistake {
+    id: string;
+    original: string;
+    correction: string;
+    timestamp: Date;
+    context: string; // The scenario or conversation context
+}

@@ -127,5 +127,13 @@ export const SCENARIOS: Scenario[] = [
         context: 'You are checking in for an international flight. Practice confirming your reservation, checking baggage, asking about gate information, and understanding announcements.',
         difficulty: 'Beginner',
         icon: 'Plane'
+    },
+    {
+        id: 'negotiation',
+        title: 'Business Negotiation',
+        description: 'Close a high-stakes partnership deal',
+        context: 'You are representing your company in a negotiation with a major international partner. Discuss terms, address concerns, and try to reach a mutually beneficial agreement. Use formal and persuasive language.',
+        difficulty: 'Advanced',
+        icon: 'Users'
     }
 ];

@@ -4,13 +4,14 @@
 
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { Message, LanguageConfig, SkillLevel, Scenario } from '@/types/languageTypes';
+import { Message, LanguageConfig, SkillLevel, Scenario, Mistake } from '@/types/languageTypes';
 
 interface LanguageStore {
     // State
     targetLanguage: LanguageConfig | null;
     skillLevel: SkillLevel | null;
     messages: Message[];
+    mistakeLog: Mistake[]; // New State
     currentScenario: Scenario | null;
     isInitialized: boolean;
 
@@ -27,6 +28,8 @@ interface LanguageStore {
     setSkillLevel: (level: SkillLevel) => void;
     setScenario: (scenario: Scenario | null) => void;
     addMessage: (message: Message) => void;
+    addMistake: (mistake: Mistake) => void; // New Action
+    clearMistakes: () => void; // New Action
     clearMessages: () => void;
     resetConversation: () => void;
     initialize: () => void;
@@ -39,6 +42,7 @@ export const useLanguageStore = create<LanguageStore>()(
             targetLanguage: null,
             skillLevel: null,
             messages: [],
+            mistakeLog: [], // Initial
             currentScenario: null,
             isInitialized: false,
             coins: 100, // Bonus for joining
@@ -60,6 +64,15 @@ export const useLanguageStore = create<LanguageStore>()(
                     messages: [...state.messages, message]
                 })),
 
+            // Add a new mistake
+            addMistake: (mistake) =>
+                set((state) => ({
+                    mistakeLog: [mistake, ...state.mistakeLog]
+                })),
+
+            // Clear mistakes
+            clearMistakes: () => set({ mistakeLog: [] }),
+
             // Clear all messages but keep settings
             clearMessages: () => set({ messages: [] }),
 
@@ -69,6 +82,7 @@ export const useLanguageStore = create<LanguageStore>()(
                     targetLanguage: null,
                     skillLevel: null,
                     messages: [],
+                    mistakeLog: [],
                     currentScenario: null,
                     isInitialized: false,
                     coins: 100,
@@ -104,7 +118,8 @@ export const useLanguageStore = create<LanguageStore>()(
                 isInitialized: state.isInitialized,
                 coins: state.coins,
                 inventory: state.inventory,
-                avatarConfig: state.avatarConfig
+                avatarConfig: state.avatarConfig,
+                mistakeLog: state.mistakeLog // Persist mistakes
             })
         }
     )
