@@ -199,22 +199,66 @@ export function LanguageCoach() {
         setError(null);
 
         try {
-            const mockResponse = generateMockGreeting(targetLanguage.name, skillLevel);
-            await delay(1000);
+            try {
+                // Real AI Greeting
+                const prompt = `
+            Act as a native ${targetLanguage.name} language tutor. 
+            User Skill Level: ${skillLevel}.
+            
+            Task: Generate a warm, welcoming initial greeting for a new student.
+            
+            Instructions:
+            1. Speak ONLY in ${targetLanguage.name} (with English translation in parentheses).
+            2. Match the difficulty to the user's skill level.
+            3. Ask a simple open-ended question to start the conversation.
+            
+            Output JSON format ONLY:
+            {
+                "response": "Greeting in ${targetLanguage.name}",
+                "translation": "English translation",
+                "feedback": null
+            }
+            `;
 
-            const coachMessage: Message = {
-                id: Date.now().toString(),
-                role: 'coach',
-                content: mockResponse.response,
-                timestamp: new Date(),
-                translation: mockResponse.translation,
-                feedback: mockResponse.feedback
-            };
+                const result = await model.generateContent(prompt);
+                const responseText = result.response.text();
 
-            addMessage(coachMessage);
-        } catch (err) {
-            setError('Failed to initialize conversation. Please try again.');
-            console.error(err);
+                const cleanJson = responseText.replace(/```json|```/g, '').trim();
+                const aiData = JSON.parse(cleanJson);
+
+                const coachMessage: Message = {
+                    id: Date.now().toString(),
+                    role: 'coach',
+                    content: aiData.response,
+                    timestamp: new Date(),
+                    translation: aiData.translation,
+                    feedback: null
+                };
+
+                addMessage(coachMessage);
+            } catch (err: any) {
+                console.error(err);
+                // Silent fail or default fallback
+                const fallbackGreetings: Record<string, string> = {
+                    'Spanish': '¡Hola! ¿Cómo estás?',
+                    'French': 'Bonjour! Comment allez-vous?',
+                    'German': 'Hallo! Wie geht es dir?',
+                    'Italian': 'Ciao! Come stai?',
+                    'Portuguese': 'Olá! Como vai?',
+                    'Japanese': 'こんにちは！お元気ですか？',
+                    'Korean': '안녕하세요! 잘 지내셨나요?',
+                    'Chinese': '你好！你好吗？'
+                };
+
+                addMessage({
+                    id: Date.now().toString(),
+                    role: 'coach',
+                    content: fallbackGreetings[targetLanguage.name] || `Hello! Ready to practice ${targetLanguage.name}?`,
+                    timestamp: new Date()
+                });
+            } finally {
+                setIsLoading(false);
+            }
         } finally {
             setIsLoading(false);
         }
