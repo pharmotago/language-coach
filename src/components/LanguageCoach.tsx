@@ -199,9 +199,8 @@ export function LanguageCoach() {
         setError(null);
 
         try {
-            try {
-                // Real AI Greeting
-                const prompt = `
+            // Real AI Greeting
+            const prompt = `
             Act as a native ${targetLanguage.name} language tutor. 
             User Skill Level: ${skillLevel}.
             
@@ -220,45 +219,42 @@ export function LanguageCoach() {
             }
             `;
 
-                const result = await model.generateContent(prompt);
-                const responseText = result.response.text();
+            const result = await model.generateContent(prompt);
+            const responseText = result.response.text();
 
-                const cleanJson = responseText.replace(/```json|```/g, '').trim();
-                const aiData = JSON.parse(cleanJson);
+            const cleanJson = responseText.replace(/```json|```/g, '').trim();
+            const aiData = JSON.parse(cleanJson);
 
-                const coachMessage: Message = {
-                    id: Date.now().toString(),
-                    role: 'coach',
-                    content: aiData.response,
-                    timestamp: new Date(),
-                    translation: aiData.translation,
-                    feedback: null
-                };
+            const coachMessage: Message = {
+                id: Date.now().toString(),
+                role: 'coach',
+                content: aiData.response,
+                timestamp: new Date(),
+                translation: aiData.translation,
+                feedback: undefined
+            };
 
-                addMessage(coachMessage);
-            } catch (err: any) {
-                console.error(err);
-                // Silent fail or default fallback
-                const fallbackGreetings: Record<string, string> = {
-                    'Spanish': '¡Hola! ¿Cómo estás?',
-                    'French': 'Bonjour! Comment allez-vous?',
-                    'German': 'Hallo! Wie geht es dir?',
-                    'Italian': 'Ciao! Come stai?',
-                    'Portuguese': 'Olá! Como vai?',
-                    'Japanese': 'こんにちは！お元気ですか？',
-                    'Korean': '안녕하세요! 잘 지내셨나요?',
-                    'Chinese': '你好！你好吗？'
-                };
+            addMessage(coachMessage);
+        } catch (err: any) {
+            console.error(err);
+            // Silent fail or default fallback
+            const fallbackGreetings: Record<string, string> = {
+                'Spanish': '¡Hola! ¿Cómo estás?',
+                'French': 'Bonjour! Comment allez-vous?',
+                'German': 'Hallo! Wie geht es dir?',
+                'Italian': 'Ciao! Come stai?',
+                'Portuguese': 'Olá! Como vai?',
+                'Japanese': 'こんにちは！お元気ですか？',
+                'Korean': '안녕하세요! 잘 지내셨나요?',
+                'Chinese': '你好！你好吗？'
+            };
 
-                addMessage({
-                    id: Date.now().toString(),
-                    role: 'coach',
-                    content: fallbackGreetings[targetLanguage.name] || `Hello! Ready to practice ${targetLanguage.name}?`,
-                    timestamp: new Date()
-                });
-            } finally {
-                setIsLoading(false);
-            }
+            addMessage({
+                id: Date.now().toString(),
+                role: 'coach',
+                content: fallbackGreetings[targetLanguage.name] || `Hello! Ready to practice ${targetLanguage.name}?`,
+                timestamp: new Date()
+            });
         } finally {
             setIsLoading(false);
         }
@@ -335,7 +331,7 @@ export function LanguageCoach() {
                 content: aiData.response,
                 timestamp: new Date(),
                 translation: aiData.translation,
-                feedback: aiData.feedback,
+                feedback: aiData.feedback || undefined,
                 // Culture note can be generated separately or added to the prompt later if needed
             };
 
