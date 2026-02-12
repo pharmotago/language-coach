@@ -4,8 +4,11 @@ import "./globals.css";
 import { cn } from "@/lib/utils";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { ClientLayout } from "@/components/ClientLayout";
+import Script from "next/script";
 
 const inter = Inter({ subsets: ["latin"] });
+
+const ADSENSE_PUB_ID = "pub-1966724508656296";
 
 export const metadata: Metadata = {
     title: {
@@ -58,6 +61,15 @@ export default function RootLayout({
 }>) {
     return (
         <html lang="en" className="scroll-smooth">
+            <head>
+                <Script
+                    id="adsense-init"
+                    async
+                    strategy="afterInteractive"
+                    src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE_PUB_ID}`}
+                    crossOrigin="anonymous"
+                />
+            </head>
             <body className={cn(inter.className, "antialiased font-sans")}>
                 <ErrorBoundary>
                     <SoundProvider>

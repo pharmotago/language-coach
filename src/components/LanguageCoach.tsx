@@ -22,6 +22,7 @@ import { MessageSkeleton } from './LoadingSkeletons';
 import { useLanguageCoachShortcuts, KeyboardShortcutsHelp } from '@/hooks/useLanguageCoachShortcuts';
 import { exportConversation } from '@/lib/conversationExport';
 import { shareReferral } from '@/lib/referral';
+import { AdSense } from './AdSense';
 
 // Phase 2 Integrations
 import { AchievementsList, AchievementUnlockNotification, DEFAULT_ACHIEVEMENTS, Achievement } from './AchievementSystem';
