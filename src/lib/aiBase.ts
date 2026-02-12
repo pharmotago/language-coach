@@ -47,6 +47,32 @@ async function retryWithBackoff<T>(
     throw new Error('Max retries exceeded');
 }
 
+// Helper to handle LLM JSON responses with potential markdown or malformed formatting
+function cleanAndParseJSON(text: string): any {
+    try {
+        // 1. Try direct parse
+        return JSON.parse(text);
+    } catch (e) {
+        // 2. Clean markdown blocks if present
+        let cleaned = text.replace(/```(?:json)?\s*([\s\S]*?)```/gi, '$1').trim();
+
+        // 3. Fallback: Find start of first { and end of last }
+        const start = cleaned.indexOf('{');
+        const end = cleaned.lastIndexOf('}');
+        if (start !== -1 && end !== -1 && end > start) {
+            cleaned = cleaned.substring(start, end + 1);
+        }
+
+        try {
+            return JSON.parse(cleaned);
+        } catch (innerE: any) {
+            console.error("JSON Parse Failure. Raw text:", text);
+            console.error("Attempted cleaning result:", cleaned);
+            throw new Error(`AI JSON Parse Error: ${innerE.message}`);
+        }
+    }
+}
+
 // OpenAI Adapter
 export class OpenAIAdapter implements AIProvider {
     name = 'OpenAI';
@@ -87,7 +113,7 @@ export class OpenAIAdapter implements AIProvider {
             }
 
             const data = await response.json();
-            const content = JSON.parse(data.choices[0].message.content);
+            const content = cleanAndParseJSON(data.choices[0].message.content);
             const tokensUsed = data.usage.total_tokens;
 
             return {
@@ -142,7 +168,7 @@ export class AnthropicAdapter implements AIProvider {
             }
 
             const data = await response.json();
-            const content = JSON.parse(data.content[0].text);
+            const content = cleanAndParseJSON(data.content[0].text);
             const tokensUsed = data.usage.input_tokens + data.usage.output_tokens;
 
             return {
@@ -193,7 +219,8 @@ export class GeminiAdapter implements AIProvider {
                         ],
                         generationConfig: {
                             temperature: params.temperature || 0.7,
-                            maxOutputTokens: params.maxTokens || 500
+                            maxOutputTokens: params.maxTokens || 500,
+                            responseMimeType: "application/json"
                         }
                     })
                 }
@@ -211,7 +238,7 @@ export class GeminiAdapter implements AIProvider {
                 throw new Error(`Gemini candidate error: ${JSON.stringify(data)}`);
             }
 
-            const content = JSON.parse(data.candidates[0].content.parts[0].text);
+            const content = cleanAndParseJSON(data.candidates[0].content.parts[0].text);
             const tokensUsed = data.usageMetadata?.totalTokenCount || 0;
 
             return {
