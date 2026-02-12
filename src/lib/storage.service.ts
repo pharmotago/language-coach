@@ -57,7 +57,7 @@ export class StorageService {
     /**
      * Clear all app-specific data
      */
-    static clearAll(prefix: string = 'stoic-dad-'): void {
+    static clearAll(prefix: string = 'language-coach-'): void {
         try {
             const keys = Object.keys(localStorage);
             keys.forEach(key => {
@@ -91,7 +91,7 @@ export class StorageService {
 
         // Strategy: Remove oldest journal entries first
         const keys = Object.keys(localStorage);
-        const journalKeys = keys.filter(k => k.startsWith('stoic-dad-journal-'));
+        const journalKeys = keys.filter(k => k.startsWith('language-coach-logs-'));
 
         if (journalKeys.length > 0) {
             // Remove oldest journal entry

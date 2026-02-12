@@ -24,8 +24,8 @@ export function EnhancedHeader({
                             <Shield className="w-6 h-6 text-amber-500" />
                         </div>
                         <div>
-                            <h1 className="text-lg font-bold text-slate-100 tracking-tight">The Stoic Dad</h1>
-                            <p className="text-xs text-slate-400">Master yourself, lead your family</p>
+                            <h1 className="text-lg font-bold text-slate-100 tracking-tight">Language Coach AI</h1>
+                            <p className="text-xs text-slate-400">Master new languages, lead the conversation</p>
                         </div>
                     </div>
 

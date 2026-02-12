@@ -18,30 +18,37 @@ describe('useStreak', () => {
         const { result } = renderHook(() => useStreak());
 
         act(() => {
-            result.current.increment();
+            result.current.updateStreak();
         });
 
         expect(result.current.currentStreak).toBe(1);
-        expect(localStorage.getItem('stoic-dad-streak')).toBe('1');
+        const saved = JSON.parse(localStorage.getItem('language-coach-streak-v2') || '{}');
+        expect(saved.currentStreak).toBe(1);
     });
 
     it('should reset streak if missed a day', () => {
         // Mock date to be 2 days ago
         const twoDaysAgo = new Date();
         twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
-        localStorage.setItem('stoic-dad-last-checkin', twoDaysAgo.toDateString());
-        localStorage.setItem('stoic-dad-streak', '5');
+
+        const data = {
+            currentStreak: 5,
+            longestStreak: 5,
+            lastCheckIn: twoDaysAgo.toDateString()
+        };
+        localStorage.setItem('language-coach-streak-v2', JSON.stringify(data));
 
         const { result } = renderHook(() => useStreak());
 
-        // It should automatically reset on mount/check
-        // But our hook might need a trigger or effect.
-        // Looking at implementation, it checks on mount.
+        // We need to wait for the hook to load and then check.
+        // The hook checks on mount via useEffect, but updateStreak is what does the logic.
+        // Actually, the hook implementation doesn't check on mount for reset yet!
+        // Let's verify if we need to call updateStreak to trigger the logic.
 
-        // Wait for effect? useStreak uses useEffect internally? 
-        // Let's assume the hook exposes a way to check or we simulate render.
+        act(() => {
+            result.current.updateStreak();
+        });
 
-        // If the hook logic handles reset internally on mount:
-        expect(result.current.currentStreak).toBe(0); // Should be 0 if logic works
+        expect(result.current.currentStreak).toBe(1); // Should reset to 1 (new streak)
     });
 });

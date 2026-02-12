@@ -20,7 +20,7 @@ export function PremiumModal({ isOpen, onClose, onUnlock }: PremiumModalProps) {
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        if (code.trim().toUpperCase() === 'STOIC2026') {
+        if (code.trim().toUpperCase() === 'FLUENT2026') {
             onUnlock();
             onClose();
             play('success');
@@ -53,8 +53,8 @@ export function PremiumModal({ isOpen, onClose, onUnlock }: PremiumModalProps) {
                     <div className="relative z-10 inline-flex p-4 bg-slate-900 rounded-full border border-amber-500/50 mb-4 shadow-xl shadow-amber-500/10">
                         <Lock className="w-8 h-8 text-amber-500" />
                     </div>
-                    <h2 className="text-3xl font-bold text-white mb-2">Unlock The Full Protocol</h2>
-                    <p className="text-amber-200/80 font-medium">Join 5,000+ Stoic Fathers</p>
+                    <h2 className="text-3xl font-bold text-white mb-2">Unlock Full Immersion</h2>
+                    <p className="text-amber-200/80 font-medium">Join 5,000+ Dedicated Learners</p>
                 </div>
 
                 <div className="p-8">
@@ -90,7 +90,7 @@ export function PremiumModal({ isOpen, onClose, onUnlock }: PremiumModalProps) {
                                 type="text"
                                 value={code}
                                 onChange={(e) => setCode(e.target.value)}
-                                placeholder="STOIC..."
+                                placeholder="CODE..."
                                 className={`flex-1 bg-slate-800 border ${error ? 'border-red-500' : 'border-slate-700'} rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-amber-500/50 transition-all font-mono tracking-widest`}
                             />
                             <button

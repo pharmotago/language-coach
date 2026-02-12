@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { Message } from "@/types/languageTypes";
-import { feedbackModel } from "@/lib/gemini";
+import { aiService } from "@/lib/aiCore";
 import { Sparkles, CheckCircle2, AlertTriangle, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLanguageStore } from "@/store/useLanguageStore";
@@ -32,25 +32,38 @@ export function AICoachFeedback({ messages, targetLanguage }: AICoachFeedbackPro
             if (lastMessage.content.length < 5) return;
 
             try {
-                const prompt = `Analyze this ${targetLanguage} sentence: "${lastMessage.content}".`;
-                const result = await feedbackModel.generateContent(prompt);
-                const response = result.response;
-                const text = response.text();
+                const prompt = `Analyze this ${targetLanguage} sentence: "${lastMessage.content}". 
+                You are a strict language tutor. Analyze the student's message for grammar errors and cultural faux pas. 
+                Output JSON: { hasError: boolean, feedback: string, culturalNote?: string }. 
+                The 'feedback' field should give a short, helpful correction. If no error, hasError is false.`;
 
-                // Clean markdown code blocks if present
-                const cleanText = text.replace(/```json/g, '').replace(/```/g, '').trim();
-                const data = JSON.parse(cleanText);
+                const aiResponse = await aiService.generateResponse({
+                    messages: [],
+                    systemPrompt: prompt,
+                    targetLanguage: targetLanguage,
+                    skillLevel: 'Advanced' // Tutor mode is always high precision
+                });
 
-                if (data.hasError || data.culturalNote) {
-                    setFeedback(data);
+                // Extract feedback properties carefully to match state types
+                const feedbackText = aiResponse.feedback?.correction || aiResponse.response;
+                const culturalNoteText = aiResponse.translation;
+
+                const hasError = !!aiResponse.feedback?.correction;
+
+                if (hasError || culturalNoteText) {
+                    setFeedback({
+                        hasError,
+                        feedback: feedbackText,
+                        culturalNote: culturalNoteText
+                    });
                     setIsVisible(true);
 
                     // Save to Mistake Vault
-                    if (data.hasError) {
+                    if (hasError) {
                         addMistake({
                             id: Date.now().toString(),
                             original: lastMessage.content,
-                            correction: data.feedback,
+                            correction: feedbackText,
                             timestamp: new Date(),
                             context: targetLanguage
                         });

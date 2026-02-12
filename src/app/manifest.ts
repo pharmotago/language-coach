@@ -2,9 +2,9 @@ import { MetadataRoute } from 'next';
 
 export default function manifest(): MetadataRoute.Manifest {
     return {
-        name: 'The Stoic Dad',
-        short_name: 'Stoic Dad',
-        description: 'Ancient wisdom for modern fathers',
+        name: 'Language Coach AI',
+        short_name: 'Coach AI',
+        description: 'Premium AI Language Immersion',
         start_url: '/',
         display: 'standalone',
         background_color: '#0f172a',

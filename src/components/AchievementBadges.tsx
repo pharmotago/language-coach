@@ -42,8 +42,8 @@ export function AchievementBadges({ completedModules, currentStreak, longestStre
             unlocked: currentStreak >= 7
         },
         {
-            id: 'stoic-master',
-            name: 'Stoic Master',
+            id: 'language-master',
+            name: 'Language Master',
             description: 'Complete all 10 modules',
             icon: Crown,
             unlocked: completedModules.length === 10,
@@ -58,8 +58,8 @@ export function AchievementBadges({ completedModules, currentStreak, longestStre
             unlocked: [7, 8, 9, 10].every(id => completedModules.includes(id))
         },
         {
-            id: 'dedicated-dad',
-            name: 'Dedicated Dad',
+            id: 'immersion-legend',
+            name: 'Immersion Legend',
             description: 'Achieve a 30-day streak',
             icon: Shield,
             unlocked: longestStreak >= 30,

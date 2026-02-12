@@ -11,7 +11,7 @@ interface UserProfileProps {
     className?: string;
 }
 
-export function UserProfile({ totalXp, username = "Stoic Initiate", className }: UserProfileProps) {
+export function UserProfile({ totalXp, username = "Immersion Student", className }: UserProfileProps) {
     const currentLevel = calculateLevel(totalXp);
     const progress = getLevelProgress(totalXp);
     const nextLevel = getNextLevel(currentLevel.level);

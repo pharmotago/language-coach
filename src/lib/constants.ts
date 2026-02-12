@@ -1,10 +1,10 @@
 // Storage keys with version suffix for schema migration
 export const STORAGE_KEYS = {
-    PROGRESS: 'stoic-dad-progress-v2',
-    STREAK: 'stoic-dad-streak-v2',
-    JOURNAL_PREFIX: 'stoic-dad-journal',
-    SETTINGS: 'stoic-dad-settings-v2',
-    WELCOMED: 'stoic-dad-welcomed',
+    PROGRESS: 'language-coach-progress-v1',
+    STREAK: 'language-coach-streak-v1',
+    JOURNAL_PREFIX: 'language-coach-logs',
+    SETTINGS: 'language-coach-settings-v1',
+    WELCOMED: 'language-coach-welcomed',
 } as const;
 
 // Module configuration
@@ -19,8 +19,8 @@ export const ACHIEVEMENT_THRESHOLDS = {
     FIRST_STEP: 1,
     HABIT_FORMER: 3,
     WEEK_WARRIOR: 7,
-    DEDICATED_DAD: 30,
-    STOIC_MASTER: 10,
+    DEDICATED_LEARNER: 30,
+    LANGUAGE_MASTER: 10,
     VIRTUE_MODULES: [7, 8, 9, 10], // Temperance, Justice, Wisdom, Final
 } as const;
 

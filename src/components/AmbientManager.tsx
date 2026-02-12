@@ -7,7 +7,8 @@ import { Volume2, VolumeX, Waves } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export function AmbientManager() {
-    const { currentScenario } = useLanguageStore();
+    const { targetLanguage, currentScenarios } = useLanguageStore();
+    const currentScenario = targetLanguage ? currentScenarios[targetLanguage.code] : null;
     const [isPlaying, setIsPlaying] = useState(false);
     const [volume, setVolume] = useState(0.3);
 

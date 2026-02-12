@@ -79,7 +79,7 @@ export function LeadGenModal() {
                             </div>
                             <h2 className="text-2xl font-bold text-white mb-2">Wait! Don't Leave Empty Handed.</h2>
                             <p className="text-slate-400">
-                                Get our free <strong>"Stoic Morning Routine" PDF</strong>. Used by 10,000+ fathers to start the day with focus.
+                                Get our free <strong>"Language Immersion Guide" PDF</strong>. Used by 10,000+ students to achieve fluency faster.
                             </p>
                         </div>
 

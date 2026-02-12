@@ -219,7 +219,7 @@ export function FlashcardReview({ card, onReview, onSpeak }: {
     );
 }
 
-export function VocabularyDashboard({ cards }: { cards: VocabularyCard[] }) {
+export function VocabularyDashboard({ cards, onStudy }: { cards: VocabularyCard[], onStudy?: () => void }) {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
@@ -270,7 +270,10 @@ export function VocabularyDashboard({ cards }: { cards: VocabularyCard[] }) {
 
             {/* Study Now Button */}
             {stats.dueToday > 0 && (
-                <button className="w-full btn-primary py-4 text-lg flex items-center justify-center gap-2">
+                <button
+                    onClick={onStudy}
+                    className="w-full btn-primary py-4 text-lg flex items-center justify-center gap-2"
+                >
                     <Brain className="w-6 h-6" />
                     Study {stats.dueToday} Cards Now
                 </button>

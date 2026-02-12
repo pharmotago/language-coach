@@ -5,86 +5,188 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { Message, LanguageConfig, SkillLevel, Scenario, Mistake } from '@/types/languageTypes';
+import { VocabularyCard, calculateNextReview } from '@/components/VocabularyFlashcards';
 
 interface LanguageStore {
-    // State
+    // Current Context
     targetLanguage: LanguageConfig | null;
-    skillLevel: SkillLevel | null;
-    messages: Message[];
-    mistakeLog: Mistake[]; // New State
-    currentScenario: Scenario | null;
     isInitialized: boolean;
 
-    // Phase 4: Gamification
+    // Per-Language State (indexed by language code)
+    skillLevels: Record<string, SkillLevel>;
+    messages: Record<string, Message[]>;
+    mistakeLog: Record<string, Mistake[]>;
+    vocabulary: Record<string, VocabularyCard[]>;
+    currentScenarios: Record<string, Scenario | null>;
+
+    // Global User State
     coins: number;
     inventory: string[];
     avatarConfig: { skinColor: string; bgColor: string; eyeType: string; mouthType: string };
+
+    // Global Actions
+    setLanguage: (language: LanguageConfig) => void;
     addCoins: (amount: number) => void;
     purchaseItem: (itemId: string, cost: number) => boolean;
     updateAvatarConfig: (config: { skinColor: string; bgColor: string; eyeType: string; mouthType: string }) => void;
+    initialize: () => void;
+    resetAll: () => void;
 
-    // Actions
-    setLanguage: (language: LanguageConfig) => void;
+    // Contextual Actions (auto-index by targetLanguage.code)
     setSkillLevel: (level: SkillLevel) => void;
     setScenario: (scenario: Scenario | null) => void;
     addMessage: (message: Message) => void;
-    addMistake: (mistake: Mistake) => void; // New Action
-    clearMistakes: () => void; // New Action
+    addMistake: (mistake: Mistake) => void;
+    clearMistakes: () => void;
     clearMessages: () => void;
-    resetConversation: () => void;
-    initialize: () => void;
+
+    // Vocabulary Actions
+    addVocabularyCard: (card: Omit<VocabularyCard, 'id' | 'dateAdded' | 'easinessFactor' | 'interval' | 'repetitions' | 'nextReviewDate' | 'masteryLevel' | 'reviewCount'>) => void;
+    updateVocabularyCard: (cardId: string, quality: number) => void;
+
+    // Internal Helpers
+    _getLang: () => string;
 }
 
 export const useLanguageStore = create<LanguageStore>()(
     persist(
         (set, get) => ({
-            // Initial state
+            // Current Context
             targetLanguage: null,
-            skillLevel: null,
-            messages: [],
-            mistakeLog: [], // Initial
-            currentScenario: null,
             isInitialized: false,
-            coins: 100, // Bonus for joining
+
+            // Per-Language Init
+            skillLevels: {},
+            messages: {},
+            mistakeLog: {},
+            vocabulary: {},
+            currentScenarios: {},
+
+            // Global State
+            coins: 100,
             inventory: [],
             avatarConfig: { skinColor: '#f8d9ce', bgColor: 'bg-slate-700', eyeType: 'normal', mouthType: 'smile' },
 
-            // Set target language
+            // Switch language context (non-destructive)
             setLanguage: (language) => set({ targetLanguage: language }),
 
-            // Set skill level
-            setSkillLevel: (level) => set({ skillLevel: level }),
+            // Helper to get current language code
+            _getLang: () => get().targetLanguage?.code || 'global',
 
-            // Set current scenario
-            setScenario: (scenario) => set({ currentScenario: scenario }),
-
-            // Add a new message to the conversation
-            addMessage: (message) =>
+            setSkillLevel: (level) => {
+                const lang = get().targetLanguage?.code;
+                if (!lang) return;
                 set((state) => ({
-                    messages: [...state.messages, message]
-                })),
+                    skillLevels: { ...state.skillLevels, [lang]: level }
+                }));
+            },
 
-            // Add a new mistake
-            addMistake: (mistake) =>
+            setScenario: (scenario) => {
+                const lang = get().targetLanguage?.code;
+                if (!lang) return;
                 set((state) => ({
-                    mistakeLog: [mistake, ...state.mistakeLog]
-                })),
+                    currentScenarios: { ...state.currentScenarios, [lang]: scenario }
+                }));
+            },
 
-            // Clear mistakes
-            clearMistakes: () => set({ mistakeLog: [] }),
+            addMessage: (message) => {
+                const lang = get().targetLanguage?.code;
+                if (!lang) return;
+                set((state) => ({
+                    messages: {
+                        ...state.messages,
+                        [lang]: [...(state.messages[lang] || []), message]
+                    }
+                }));
+            },
 
-            // Clear all messages but keep settings
-            clearMessages: () => set({ messages: [] }),
+            addMistake: (mistake) => {
+                const lang = get().targetLanguage?.code;
+                if (!lang) return;
+                set((state) => ({
+                    mistakeLog: {
+                        ...state.mistakeLog,
+                        [lang]: [mistake, ...(state.mistakeLog[lang] || [])]
+                    }
+                }));
+            },
 
-            // Complete reset
-            resetConversation: () =>
+            addVocabularyCard: (cardData) => {
+                const lang = get().targetLanguage?.code;
+                if (!lang) return;
+
+                set((state) => {
+                    const deck = state.vocabulary[lang] || [];
+                    // Avoid duplicates
+                    if (deck.find(c => c.term.toLowerCase() === cardData.term.toLowerCase())) return state;
+
+                    const newCard: VocabularyCard = {
+                        ...cardData,
+                        id: Math.random().toString(36).substring(7),
+                        dateAdded: new Date(),
+                        easinessFactor: 2.5,
+                        interval: 0,
+                        repetitions: 0,
+                        nextReviewDate: new Date(),
+                        masteryLevel: 'new',
+                        reviewCount: 0
+                    };
+
+                    return {
+                        vocabulary: {
+                            ...state.vocabulary,
+                            [lang]: [newCard, ...deck]
+                        }
+                    };
+                });
+            },
+
+            updateVocabularyCard: (cardId, quality) => {
+                const lang = get().targetLanguage?.code;
+                if (!lang) return;
+
+                set((state) => {
+                    const deck = state.vocabulary[lang] || [];
+                    const updatedDeck = deck.map(card => {
+                        if (card.id === cardId) {
+                            return calculateNextReview(card, quality);
+                        }
+                        return card;
+                    });
+
+                    return {
+                        vocabulary: {
+                            ...state.vocabulary,
+                            [lang]: updatedDeck
+                        }
+                    };
+                });
+            },
+
+            clearMistakes: () => {
+                const langCode = get()._getLang(); // Use the helper function
+                set((state) => ({
+                    mistakeLog: { ...state.mistakeLog, [langCode]: [] } // Target mistakeLog
+                }));
+            },
+
+            clearMessages: () => {
+                const lang = get().targetLanguage?.code;
+                if (!lang) return;
+                set((state) => ({
+                    messages: { ...state.messages, [lang]: [] }
+                }));
+            },
+
+            resetAll: () =>
                 set({
                     targetLanguage: null,
-                    skillLevel: null,
-                    messages: [],
-                    mistakeLog: [],
-                    currentScenario: null,
                     isInitialized: false,
+                    skillLevels: {},
+                    messages: {},
+                    mistakeLog: {},
+                    vocabulary: {},
+                    currentScenarios: {},
                     coins: 100,
                     inventory: [],
                     avatarConfig: { skinColor: '#f8d9ce', bgColor: 'bg-slate-700', eyeType: 'normal', mouthType: 'smile' }
@@ -105,8 +207,6 @@ export const useLanguageStore = create<LanguageStore>()(
             },
 
             updateAvatarConfig: (config) => set({ avatarConfig: config }),
-
-            // Mark as initialized (after setup complete)
             initialize: () => set({ isInitialized: true })
         }),
         {
@@ -114,12 +214,15 @@ export const useLanguageStore = create<LanguageStore>()(
             // Only persist settings, not messages
             partialize: (state) => ({
                 targetLanguage: state.targetLanguage,
-                skillLevel: state.skillLevel,
                 isInitialized: state.isInitialized,
+                skillLevels: state.skillLevels,
+                messages: state.messages,
+                mistakeLog: state.mistakeLog,
+                vocabulary: state.vocabulary,
+                currentScenarios: state.currentScenarios,
                 coins: state.coins,
                 inventory: state.inventory,
-                avatarConfig: state.avatarConfig,
-                mistakeLog: state.mistakeLog // Persist mistakes
+                avatarConfig: state.avatarConfig
             })
         }
     )

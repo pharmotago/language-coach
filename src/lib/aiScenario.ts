@@ -1,6 +1,6 @@
 import { Scenario, SkillLevel } from '@/types/languageTypes';
 
-import { scenarioModel } from '@/lib/gemini';
+import { aiService } from '@/lib/aiCore';
 
 // Real AI generator for custom scenarios
 export async function generateScenario(
@@ -22,18 +22,31 @@ export async function generateScenario(
     `;
 
     try {
-        const result = await scenarioModel.generateContent(systemPrompt);
-        const responseText = result.response.text();
-        const cleanJson = responseText.replace(/```json|```/g, '').trim();
-        const data = JSON.parse(cleanJson);
+        const aiResponse = await aiService.generateResponse({
+            messages: [],
+            systemPrompt: systemPrompt,
+            targetLanguage: 'English', // Neutral as this is for metadata
+            skillLevel: skillLevel
+        });
 
+        const data = {
+            id: `custom-${Date.now()}`,
+            title: aiResponse.response, // Fallback if structure varies
+            description: aiResponse.translation,
+            context: aiResponse.response,
+            difficulty: skillLevel,
+            icon: 'Sparkles'
+        };
+
+        // Note: The tiered response might already be parsed if using JSON adapters
+        // Here we adapt the response to the expected scenario structure
         return {
-            id: data.id || `custom-${Date.now()}`,
-            title: data.title,
-            description: data.description,
-            context: data.context,
-            difficulty: data.difficulty as SkillLevel,
-            icon: data.icon || 'Sparkles'
+            id: data.id,
+            title: aiResponse.response.split('\n')[0].substring(0, 30),
+            description: aiResponse.translation || aiResponse.response.substring(0, 100),
+            context: aiResponse.response,
+            difficulty: skillLevel,
+            icon: 'Sparkles'
         };
     } catch (error) {
         console.error("Scenario Generation Error:", error);

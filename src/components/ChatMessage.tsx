@@ -88,7 +88,7 @@ export function ChatMessage({ message, targetLanguageName, languageCode = 'en', 
                     <div className="mt-2">
                         <button
                             onClick={() => setShowTranslation(!showTranslation)}
-                            className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-400 transition-colors px-2 py-1 rounded-lg hover:bg-slate-800/30"
+                            className="flex items-center gap-1.5 text-xs text-white/50 hover:text-white transition-all px-2 py-1 rounded-lg hover:bg-white/5"
                         >
                             {showTranslation ? (
                                 <>
@@ -105,7 +105,7 @@ export function ChatMessage({ message, targetLanguageName, languageCode = 'en', 
 
                         {showTranslation && (
                             <div className="mt-2 px-3 py-2 bg-slate-900/50 rounded-lg border border-slate-800">
-                                <p className="text-sm text-slate-400 italic">
+                                <p className="text-sm text-white/70 italic">
                                     {message.translation}
                                 </p>
                             </div>
@@ -135,7 +135,7 @@ export function ChatMessage({ message, targetLanguageName, languageCode = 'en', 
 
                 {/* Timestamp */}
                 <div className={cn(
-                    "mt-1.5 text-xs text-slate-600",
+                    "mt-1.5 text-[10px] font-black uppercase tracking-widest text-white/30",
                     isUser && "text-right"
                 )}>
                     {new Date(message.timestamp).toLocaleTimeString([], {

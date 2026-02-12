@@ -31,7 +31,8 @@ interface LeaderboardProps {
 }
 
 export function Leaderboard({ currentUserXp, currentUserStreak }: LeaderboardProps) {
-    const { skillLevel } = useLanguageStore();
+    const { targetLanguage, skillLevels } = useLanguageStore();
+    const skillLevel = targetLanguage ? skillLevels[targetLanguage.code] : null;
     const [timeframe, setTimeframe] = useState<'weekly' | 'all-time'>('weekly');
 
     // Simulate current user relative to leaderboard

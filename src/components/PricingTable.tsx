@@ -7,14 +7,14 @@ export function PricingTable() {
             <div className="text-center mb-12">
                 <h2 className="text-3xl font-bold text-white mb-4">Choose Your Path</h2>
                 <p className="text-slate-400 max-w-xl mx-auto">
-                    Most fathers stumble through blindly. The Stoic Dad follows a protocol.
+                    Master any language with AI-powered immersion.
                 </p>
             </div>
 
             <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
                 {/* Free Tier */}
                 <div className="bg-slate-900/50 rounded-2xl p-8 border border-slate-800">
-                    <h3 className="text-xl font-bold text-slate-300 mb-2">The Wanderer</h3>
+                    <h3 className="text-xl font-bold text-slate-300 mb-2">Explorer</h3>
                     <div className="text-4xl font-bold text-white mb-6">$0</div>
                     <ul className="space-y-4 mb-8">
                         <li className="flex items-center gap-3 text-slate-400">
@@ -49,7 +49,7 @@ export function PricingTable() {
                         <Crown className="w-3 h-3" /> MOST POPULAR
                     </div>
 
-                    <h3 className="text-xl font-bold text-amber-500 mb-2">The Stoic Patriarch</h3>
+                    <h3 className="text-xl font-bold text-amber-500 mb-2">Polyglot Master</h3>
                     <div className="flex items-end gap-2 mb-6">
                         <div className="text-4xl font-bold text-white">$29</div>
                         <div className="text-lg text-slate-500 line-through mb-1">$99</div>

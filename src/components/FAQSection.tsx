@@ -18,8 +18,8 @@ export function FAQSection() {
                     answer="The core curriculum is designed as a 5-day intensive path, but you can go at your own pace. Most dads spend 10-15 minutes per day reading and reflecting."
                 />
                 <FAQItem
-                    question="Do I need to be a 'Stoic' to use this?"
-                    answer="Not at all. This is practical philosophy, not academic theory. We use Stoic principles (Emotional Control, Leadership, Resilience) applied specifically to modern fatherhood challenges."
+                    question="Do I need to be a linguist to use this?"
+                    answer="Not at all. This is practical immersion, not academic theory. We use AI to simulate real conversations tailored to your current skill level."
                 />
                 <FAQItem
                     question="What if it doesn't work for me?"
@@ -32,7 +32,7 @@ export function FAQSection() {
                 <ShieldCheck className="w-12 h-12 text-emerald-500 mb-4" />
                 <h3 className="text-xl font-bold text-white mb-2">100% Ironclad Guarantee</h3>
                 <p className="text-slate-400 max-w-md">
-                    Try The Stoic Dad Protocol risk-free. If you don't see a change in your patience and leadership within 30 days, we'll refund every penny.
+                    Try Language Coach AI risk-free. If you don't feel more confident in your speaking within 30 days, we'll refund every penny.
                 </p>
             </div>
         </div>

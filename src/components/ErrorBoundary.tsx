@@ -69,7 +69,7 @@ export class ErrorBoundary extends Component<Props, State> {
                         </h2>
 
                         <p className="text-slate-400 mb-6">
-                            The Stoic Dad encountered an unexpected error. This has been logged for review.
+                            Language Coach AI encountered an unexpected error. This has been logged for review.
                         </p>
 
                         {process.env.NODE_ENV === 'development' && this.state.error && (
@@ -102,9 +102,9 @@ export class ErrorBoundary extends Component<Props, State> {
                         </div>
 
                         <p className="text-xs text-slate-500 mt-6">
-                            "The impediment to action advances action. What stands in the way becomes the way."
+                            "To have another language is to possess a second soul."
                             <br />
-                            <span className="italic">— Marcus Aurelius</span>
+                            <span className="italic">— Charlemagne</span>
                         </p>
                     </div>
                 </div>

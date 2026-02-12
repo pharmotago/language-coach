@@ -7,8 +7,8 @@ import { LanguageCoachErrorBoundary } from '@/components/LanguageCoachErrorBound
 import { SoundProvider } from '@/contexts/SoundContext';
 
 export const metadata = {
-    title: 'Language Immersion Coach | Practice & Learn',
-    description: 'Practice your target language with AI-powered conversation and structured feedback'
+    title: 'Immersion Session',
+    description: 'Deep immersion into your target language with an AI Language Coach.'
 };
 
 export default function LanguagePage() {

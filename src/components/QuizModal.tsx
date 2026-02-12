@@ -161,7 +161,7 @@ export function QuizModal({ module, isOpen, onClose, onSuccess }: QuizModalProps
                                 <AlertCircle className="w-4 h-4" />
                                 Incorrect
                             </p>
-                            Try again. Stoics learn from their errors.
+                            Try again. Language learners grow through practice.
                             <button
                                 onClick={resetState}
                                 className="mt-3 text-red-400 hover:text-red-300 underline text-xs block"

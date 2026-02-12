@@ -13,11 +13,13 @@ import { cn } from '@/lib/utils';
 
 interface SetupModalProps {
     onComplete: (language: LanguageConfig, level: SkillLevel) => void;
+    onClose?: () => void;
+    initialLanguage?: LanguageConfig | null;
 }
 
-export function SetupModal({ onComplete }: SetupModalProps) {
+export function SetupModal({ onComplete, onClose, initialLanguage }: SetupModalProps) {
     const [step, setStep] = useState<'language' | 'level'>('language');
-    const [selectedLanguage, setSelectedLanguage] = useState<LanguageConfig | null>(null);
+    const [selectedLanguage, setSelectedLanguage] = useState<LanguageConfig | null>(initialLanguage || null);
 
     const handleLanguageSelect = (language: LanguageConfig) => {
         setSelectedLanguage(language);
@@ -52,6 +54,14 @@ export function SetupModal({ onComplete }: SetupModalProps) {
                             </p>
                         </div>
                     </div>
+                    {onClose && (
+                        <button
+                            onClick={onClose}
+                            className="absolute top-8 right-8 w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-white/40 hover:text-white hover:bg-white/10 transition-all"
+                        >
+                            <X className="w-6 h-6" />
+                        </button>
+                    )}
                 </div>
 
                 {/* Content */}
@@ -77,7 +87,7 @@ export function SetupModal({ onComplete }: SetupModalProps) {
                                         <div className="font-black text-white text-sm mb-1 uppercase tracking-tighter">
                                             {lang.name}
                                         </div>
-                                        <div className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">
+                                        <div className="text-[10px] text-white/40 font-black uppercase tracking-widest">
                                             {lang.nativeName}
                                         </div>
                                     </motion.button>
@@ -127,7 +137,7 @@ export function SetupModal({ onComplete }: SetupModalProps) {
                                                         <h3 className="font-black text-white text-xl uppercase tracking-tight mb-1 group-hover:text-emerald-400 transition-colors">
                                                             {level}
                                                         </h3>
-                                                        <p className="text-sm text-slate-400 leading-relaxed font-medium">
+                                                        <p className="text-sm text-white/60 leading-relaxed font-bold">
                                                             {descriptions[level]}
                                                         </p>
                                                     </div>
@@ -143,7 +153,7 @@ export function SetupModal({ onComplete }: SetupModalProps) {
 
                 {/* Footer */}
                 <div className="px-10 py-6 border-t border-white/5 bg-white/5">
-                    <p className="text-[10px] text-slate-500 text-center font-black uppercase tracking-[0.3em]">
+                    <p className="text-[10px] text-white/40 text-center font-black uppercase tracking-[0.3em]">
                         Cognitive Immersion Protocol Active
                     </p>
                 </div>

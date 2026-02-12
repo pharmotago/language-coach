@@ -1,241 +1,97 @@
-# The Stoic Dad 🛡️
+# Language Immersion Coach
 
-> **Master yourself. Lead your family.**
-
-A modern web application that transforms ancient Stoic philosophy into practical daily guidance for fathers. Built with Next.js, TypeScript, and Tailwind CSS.
-
----
-
-## ✨ Features
-
-### 🎓 Learning System
-- **10 Progressive Modules**: From Dichotomy of Control to The Final Exam
-- **Interactive Quizzes**: Knowledge checks with instant feedback
-- **Scenario-Based Learning**: Real-world parenting challenges with Stoic solutions
-
-### 🔥 Habit Formation
-- **Daily Streak Tracking**: Build consistency with visual motivation
-- **Progress Visualization**: Circular progress ring shows completion status
-- **Milestone Rewards**: Inspirational quotes unlock at 3, 7, and 30-day streaks
-
-### 🛡️ Crisis Support
-- **Emergency Toolkit**: Quick-access FAB button for moments of overwhelm
-- **4 Stoic Protocols**:
-  - Dichotomy of Control
-  - View From Above
-  - Memento Mori
-  - Tactical Pause
-
-### 📓 Personal Growth
-- **Reflection Journal**: Private notes for each module
-- **Analytics Dashboard**: Track virtue mastery (Courage, Temperance, Justice, Wisdom)
-- **Performance Metrics**: Monitor quiz scores and completion rate
-
-### 🎨 Premium UX
-- **Dark Mode Design**: Slate 900 background with Amber 500 accents
-- **Smooth Animations**: Glow, shimmer, float effects
-- **Responsive Layout**: Mobile-first with desktop sidebar
-- **Glassmorphism**: Modern, polished aesthetic
-
----
+An AI-powered language learning application built with Next.js, TypeScript, and Tailwind CSS.
 
 ## 🚀 Quick Start
 
-### Prerequisites
-- Node.js 18+ and npm
-- Modern web browser
-
-### Installation
-
 ```bash
-# Install dependencies
-npm install
-
-# Run development server
+# Start the development server
 npm run dev
 
-# Build for production
-npm run build
-
-# Start production server
-npm start
+# Navigate to:
+http://localhost:3000/language
 ```
 
-Open [http://localhost:3000](http://localhost:3000) in your browser.
+## ✨ Features
 
----
+- **8 Languages**: Spanish, French, German, Italian, Portuguese, Japanese, Korean, Chinese
+- **3 Skill Levels**: Beginner, Intermediate, Advanced
+- **Structured Feedback**: Correction, Polish, Word of the Day
+- **Voice Input**: Speech-to-text using Web Speech API
+- **8 Scenarios**: Contextual practice (café, job interview, shopping, etc.)
+- **Premium UI**: Dark mode with glassmorphism effects
 
-## 📚 How to Use
+## 📖 Usage
 
-### First-Time Users
-1. **Welcome Modal** guides you through the app's value
-2. **Module 1** is unlocked by default
-3. Complete the quiz to unlock the next module
+1. Select your target language
+2. Choose your skill level
+3. Start chatting in your target language
+4. Get immediate feedback after each message
+5. Use voice input or type manually
+6. Try different scenarios for context-based practice
 
-### Daily Practice
-1. **Check your streak** on the dashboard
-2. **Choose a module** from "The Path"
-3. **Read the lesson** and reflect on the daily challenge
-4. **Take the quiz** to test your understanding
-5. **Add journal notes** to deepen retention
+## 🔌 API Integration
 
-### Crisis Moments
-1. Click the **red shield button** (bottom-right)
-2. Select the appropriate Stoic protocol
-3. Follow the guided technique
-4. Return to the present moment
+**Currently**: integrated with Google Gemini (gemini-2.5-flash) for real-time conversation and feedback.
 
----
+**To integrate real AI:**
+1. Open `src/components/LanguageCoach.tsx`
+2. Replace `generateMockGreeting()` and `generateMockResponse()` functions
+3. Add your AI API (OpenAI, Anthropic, etc.)
+4. See [walkthrough.md](file:///C:/Users/kimsj/.gemini/antigravity/brain/1fd02cbd-a211-4bb3-8d13-f489572ea0f8/walkthrough.md) for detailed integration guide
 
-## 🏗️ Project Structure
+## 📁 Project Structure
 
 ```
 src/
-├── app/
-│   ├── page.tsx              # Main application
-│   ├── layout.tsx            # Root layout
-│   └── globals.css           # Global styles + animations
+├── app/language/page.tsx         # Main route
 ├── components/
-│   ├── Header.tsx            # Top navigation
-│   ├── ModuleCard.tsx        # Learning module card
-│   ├── LessonView.tsx        # Lesson content display
-│   ├── QuizModal.tsx         # Interactive quiz
-│   ├── StreakTracker.tsx     # Habit tracking
-│   ├── ProgressRing.tsx      # Circular progress
-│   ├── EmergencyToolkit.tsx  # Crisis protocols
-│   ├── JournalEntry.tsx      # Reflection notes
-│   ├── StatsPanel.tsx        # Analytics
-│   └── WelcomeModal.tsx      # Onboarding
-├── data/
-│   ├── index.ts              # Course data registry
-│   └── modules/              # Individual module files
-│       ├── module1.ts
-│       ├── module2.ts
-│       └── ...
-└── lib/
-    ├── schemas.ts            # TypeScript types
-    └── utils.ts              # Utility functions
+│   ├── LanguageCoach.tsx         # Main orchestrator
+│   ├── SetupModal.tsx            # Language/level selection
+│   ├── ChatMessage.tsx           # Message display
+│   ├── CoachFeedback.tsx         # Feedback sections
+│   ├── UI/VoiceInput.tsx         # Speech-to-text
+│   └── ScenarioSelector.tsx      # Scenario modal
+├── store/
+│   └── useLanguageStore.ts       # Zustand state management
+├── lib/
+│   ├── languageData.ts           # Languages & scenarios
+│   └── languageCoachPrompts.ts   # AI prompt engineering
+└── types/
+    └── languageTypes.ts          # TypeScript interfaces
 ```
 
----
+## 🎯 Key Components
 
-## 💾 Data Persistence
+- **SetupModal**: Language and skill level selection
+- **LanguageCoach**: Main container with chat interface
+- **ChatMessage**: Individual message bubbles with collapsible translations
+- **CoachFeedback**: Color-coded feedback sections
+- **VoiceInput**: Microphone button with real-time transcription
+- **ScenarioSelector**: Contextual practice scenarios
 
-All user progress is stored in **localStorage**:
+## 🎨 Design
 
-| Key | Description |
-|-----|-------------|
-| `stoic-dad-progress` | Highest unlocked module |
-| `stoic-dad-completed` | Array of completed module IDs |
-| `stoic-dad-streak` | Current daily streak |
-| `stoic-dad-longest-streak` | Personal best streak |
-| `stoic-dad-last-checkin` | Last activity date |
-| `stoic-dad-welcomed` | First-time onboarding flag |
-| `stoic-dad-journal-{id}` | Per-module reflection notes |
+- **Colors**: Slate 950 background, Amber 500 accents
+- **Style**: Glassmorphism with smooth animations
+- **Responsive**: Mobile-first design
+- **Accessibility**: Keyboard navigation, focus states
 
----
+## 📝 Documentation
 
-## 🎯 Course Curriculum
+- [Implementation Plan](file:///C:/Users/kimsj/.gemini/antigravity/brain/1fd02cbd-a211-4bb3-8d13-f489572ea0f8/implementation_plan.md)
+- [Walkthrough Guide](file:///C:/Users/kimsj/.gemini/antigravity/brain/1fd02cbd-a211-4bb3-8d13-f489572ea0f8/walkthrough.md)
+- [Task Breakdown](file:///C:/Users/kimsj/.gemini/antigravity/brain/1fd02cbd-a211-4bb3-8d13-f489572ea0f8/task.md)
 
-1. **The Dichotomy of Control** - Focus only on what you can control
-2. **Memento Mori** - Use death awareness to fuel presence
-3. **The View From Above** - Cosmic perspective for small problems
-4. **Premeditatio Malorum** - Prepare for adversity
-5. **Voluntary Discomfort** - Build antifragility in children
-6. **The Stoic Courage** - Face fear with rational assessment
-7. **The Temperate Father** - Master impulses and desires
-8. **The Just Patriarch** - Fairness, service, and social duty
-9. **The Legacy of Wisdom** - Refine your worldview
-10. **The Final Exam** - Operational readiness assessment
+## 🔧 Technologies
 
----
-
-## 🛠️ Tech Stack
-
-- **Framework**: Next.js 14 (App Router)
-- **Language**: TypeScript
-- **Styling**: Tailwind CSS
-- **Icons**: Lucide React
-- **Animations**: Canvas Confetti
-- **Utilities**: clsx, tailwind-merge
-- **Validation**: Zod
+- Next.js 14 (App Router)
+- TypeScript
+- Tailwind CSS
+- Zustand (State Management)
+- Web Speech API
+- Lucide Icons
 
 ---
 
-## 🎨 Design System
-
-### Colors
-- **Background**: Slate 950
-- **Cards**: Slate 900/800
-- **Primary**: Amber 500
-- **Text**: Slate 50/300/400
-
-### Typography
-- **Font**: Inter (Google Fonts)
-- **Heading**: Bold, tight tracking
-- **Body**: Relaxed line-height (1.7)
-
-### Components
-- `.btn-primary` - Amber CTA with shadow
-- `.btn-secondary` - Slate ghost button
-- `.glass-card` - Glassmorphism effect
-- `.badge-*` - Contextual status badges
-
----
-
-## 📖 Philosophy
-
-### Why Stoicism for Fathers?
-
-> "The impediment to action advances action. What stands in the way becomes the way." — Marcus Aurelius
-
-Modern fatherhood is overwhelming. Stoicism provides:
-- **Emotional Regulation**: Pause before reacting
-- **Perspective**: Separate controllable from uncontrollable
-- **Virtue Ethics**: Live by principles, not impulses
-- **Resilience**: Prepare for adversity, don't avoid it
-
-### The Four Cardinal Virtues
-
-1. **Courage** - Face challenges without fear
-2. **Temperance** - Master desires and impulses
-3. **Justice** - Treat others fairly, serve the family
-4. **Wisdom** - Distinguish good from bad decisions
-
----
-
-## 🚧 Future Roadmap
-
-- [ ] Spaced repetition system
-- [ ] Audio narration for lessons
-- [ ] Community scenario sharing
-- [ ] Export progress as PDF
-- [ ] PWA for offline access
-- [ ] Push notifications
-
----
-
-## 📄 License
-
-This project is for educational purposes. Stoic philosophy is public domain.
-
----
-
-## 🙏 Acknowledgments
-
-- **Marcus Aurelius** - Meditations
-- **Epictetus** - Enchiridion
-- **Seneca** - Letters from a Stoic
-- **Ryan Holiday** - The Daily Stoic
-
----
-
-## 📧 Support
-
-For questions or feedback, this is a demo application built as a code example.
-
----
-
-**Built with ❤️ for fathers who want to be better.**
-
-_"We are what we repeatedly do. Excellence, then, is not an act, but a habit." — Aristotle_
+**Ready to make language learning immersive! 🌍**

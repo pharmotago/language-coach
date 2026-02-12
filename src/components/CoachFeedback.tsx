@@ -8,6 +8,8 @@ import React, { useState } from 'react';
 import { AlertCircle, Sparkles, BookOpen, ChevronDown, ChevronUp } from 'lucide-react';
 import { Feedback } from '@/types/languageTypes';
 import { cn } from '@/lib/utils';
+import { useLanguageStore } from '@/store/useLanguageStore';
+import { Check } from 'lucide-react';
 
 interface CoachFeedbackProps {
     feedback: Feedback;
@@ -16,6 +18,23 @@ interface CoachFeedbackProps {
 
 export function CoachFeedback({ feedback, targetLanguageName }: CoachFeedbackProps) {
     const [isExpanded, setIsExpanded] = useState(true);
+    const { addVocabularyCard, targetLanguage, vocabulary } = useLanguageStore();
+    const [isHarvested, setIsHarvested] = useState(false);
+
+    const langCode = targetLanguage?.code || '';
+    const isAlreadyInDeck = vocabulary[langCode]?.some(c => c.term.toLowerCase() === feedback.wordOfTheDay.term.toLowerCase());
+
+    const handleHarvest = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        addVocabularyCard({
+            term: feedback.wordOfTheDay.term,
+            translation: feedback.wordOfTheDay.translation,
+            example: feedback.wordOfTheDay.usage,
+            language: targetLanguage?.name || 'Unknown',
+            category: 'Chat Discovery'
+        });
+        setIsHarvested(true);
+    };
 
     return (
         <div className="glass-card rounded-xl overflow-hidden border-l-4 border-l-amber-500">
@@ -80,16 +99,40 @@ export function CoachFeedback({ feedback, targetLanguageName }: CoachFeedbackPro
                                 <h4 className="text-xs font-bold text-blue-400 uppercase tracking-wider mb-1">
                                     Word of the Day
                                 </h4>
-                                <div className="space-y-1">
-                                    <p className="text-sm font-semibold text-slate-200">
-                                        {feedback.wordOfTheDay.term}
-                                    </p>
-                                    <p className="text-xs text-slate-400">
-                                        {feedback.wordOfTheDay.translation}
-                                    </p>
-                                    <p className="text-xs text-slate-500 italic mt-1.5 pl-3 border-l-2 border-blue-500/30">
-                                        {feedback.wordOfTheDay.usage}
-                                    </p>
+                                <div className="flex justify-between items-end">
+                                    <div className="space-y-1">
+                                        <p className="text-sm font-semibold text-slate-200">
+                                            {feedback.wordOfTheDay.term}
+                                        </p>
+                                        <p className="text-xs text-slate-400">
+                                            {feedback.wordOfTheDay.translation}
+                                        </p>
+                                        <p className="text-xs text-slate-500 italic mt-1.5 pl-3 border-l-2 border-blue-500/30">
+                                            {feedback.wordOfTheDay.usage}
+                                        </p>
+                                    </div>
+                                    <button
+                                        onClick={handleHarvest}
+                                        disabled={isHarvested || isAlreadyInDeck}
+                                        className={cn(
+                                            "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all",
+                                            isHarvested || isAlreadyInDeck
+                                                ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
+                                                : "bg-blue-500/20 text-blue-400 border border-blue-500/30 hover:bg-blue-500/30"
+                                        )}
+                                    >
+                                        {isHarvested || isAlreadyInDeck ? (
+                                            <>
+                                                <Check className="w-3 h-3" />
+                                                Saved
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Sparkles className="w-3 h-3" />
+                                                Harvest
+                                            </>
+                                        )}
+                                    </button>
                                 </div>
                             </div>
                         </div>

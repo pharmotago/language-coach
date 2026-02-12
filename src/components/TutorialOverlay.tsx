@@ -13,8 +13,8 @@ interface Step {
 
 const steps: Step[] = [
     {
-        title: "Welcome to The Stoic Dad",
-        description: "Your journey to emotional mastery begins here. Let's take a quick tour of your command center.",
+        title: "Welcome to Language Coach AI",
+        description: "Your journey to fluency begins here. Let's take a quick tour of your immersion center.",
         position: 'center'
     },
     {
@@ -104,8 +104,8 @@ export function TutorialOverlay({ isOpen, onClose }: TutorialOverlayProps) {
                         onClick={() => setCurrentStep(Math.max(0, currentStep - 1))}
                         disabled={isFirst}
                         className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${isFirst
-                                ? 'text-slate-600 cursor-not-allowed'
-                                : 'text-slate-300 hover:bg-slate-800'
+                            ? 'text-slate-600 cursor-not-allowed'
+                            : 'text-slate-300 hover:bg-slate-800'
                             }`}
                     >
                         <ChevronLeft className="w-4 h-4" />

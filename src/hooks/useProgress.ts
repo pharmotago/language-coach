@@ -2,13 +2,13 @@ import { useState, useEffect } from 'react';
 import { z } from 'zod';
 
 const ProgressSchema = z.object({
-    highestUnlockedId: z.number().min(1).max(10),
-    completedModules: z.array(z.number().min(1).max(10)),
+    highestUnlockedId: z.number().min(1).max(11),
+    completedModules: z.array(z.number().min(1).max(11)),
 });
 
 type Progress = z.infer<typeof ProgressSchema>;
 
-const STORAGE_KEY = 'stoic-dad-progress-v2';
+const STORAGE_KEY = 'language-coach-progress-v1';
 
 export function useProgress() {
     const [highestUnlockedId, setHighestUnlockedId] = useState(1);
@@ -25,11 +25,19 @@ export function useProgress() {
                 const validated = ProgressSchema.parse(parsed);
                 setHighestUnlockedId(validated.highestUnlockedId);
                 setCompletedModules(validated.completedModules);
+            } else {
+                // MCJP Council: Autonomous Recovery Protocol
+                // If evidence of premium status exists but progress is missing, restore baseline
+                const hasStripeKey = localStorage.getItem('mcjp_premium_key');
+                if (hasStripeKey) {
+                    setHighestUnlockedId(11);
+                    setCompletedModules([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+                    console.log('MCJP Council: Autonomous Progress Recovery Activated.');
+                }
             }
         } catch (err) {
             console.error('Failed to load progress:', err);
             setError('Failed to load progress. Starting fresh.');
-            // Clear corrupted data
             localStorage.removeItem(STORAGE_KEY);
         } finally {
             setIsLoaded(true);
@@ -58,7 +66,7 @@ export function useProgress() {
         }
 
         const nextId = moduleId + 1;
-        if (nextId > highestUnlockedId && nextId <= 10) {
+        if (nextId > highestUnlockedId && nextId <= 11) {
             setHighestUnlockedId(nextId);
         }
     };

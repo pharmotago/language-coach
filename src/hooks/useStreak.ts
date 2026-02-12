@@ -9,7 +9,7 @@ const StreakSchema = z.object({
 
 type StreakData = z.infer<typeof StreakSchema>;
 
-const STORAGE_KEY = 'stoic-dad-streak-v2';
+const STORAGE_KEY = 'language-coach-streak-v2';
 
 export function useStreak() {
     const [currentStreak, setCurrentStreak] = useState(0);

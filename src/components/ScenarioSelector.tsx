@@ -9,7 +9,7 @@ import * as Icons from 'lucide-react';
 import { Scenario, SkillLevel } from '@/types/languageTypes';
 import { SCENARIOS } from '@/lib/languageData';
 import { cn } from '@/lib/utils';
-import { scenarioModel } from '@/lib/gemini';
+import { aiService } from '@/lib/aiCore';
 
 interface ScenarioSelectorProps {
     currentLevel: SkillLevel;
@@ -37,17 +37,22 @@ export function ScenarioSelector({ currentLevel, onSelect, onClose }: ScenarioSe
 
         try {
             const prompt = `Generate a roleplay scenario for a language learner about: "${customTopic}". The difficulty should be "${currentLevel}".`;
-            const result = await scenarioModel.generateContent(prompt);
-            const response = result.response;
-            const text = response.text();
+            const aiResponse = await aiService.generateResponse({
+                messages: [],
+                systemPrompt: prompt,
+                targetLanguage: 'English',
+                skillLevel: currentLevel
+            });
 
-            const data = JSON.parse(text);
-
-            // Ensure ID is unique
+            // The aiService handles JSON cleaning and parsing for us in most cases, 
+            // but we need to map the output to the Scenario interface
             const newScenario: Scenario = {
-                ...data,
                 id: `custom_${Date.now()}`,
-                difficulty: currentLevel // Enforce requested level
+                title: aiResponse.response.split('\n')[0].substring(0, 30),
+                description: aiResponse.translation || aiResponse.response.substring(0, 100),
+                context: aiResponse.response,
+                difficulty: currentLevel,
+                icon: 'Sparkles'
             };
 
             onSelect(newScenario);

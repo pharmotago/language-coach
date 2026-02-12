@@ -9,7 +9,8 @@ import { useSound } from '@/contexts/SoundContext';
 import { triggerHaptic, HapticPatterns } from '@/lib/haptics';
 
 export function LessonGenerator() {
-    const { targetLanguage, skillLevel } = useLanguageStore();
+    const { targetLanguage, skillLevels } = useLanguageStore();
+    const skillLevel = targetLanguage ? skillLevels[targetLanguage.code] : null;
     const { playSound } = useSound();
 
     const [isLoading, setIsLoading] = useState(false);
@@ -145,12 +146,12 @@ export function LessonGenerator() {
                                     onClick={() => handleAnswer(opt)}
                                     disabled={isAnswered}
                                     className={`w-full p-4 rounded-xl text-left transition-all border ${isAnswered
-                                            ? opt === question.correctAnswer
-                                                ? 'bg-emerald-500/20 border-emerald-500 text-emerald-100'
-                                                : opt === selectedOption
-                                                    ? 'bg-red-500/20 border-red-500 text-red-100'
-                                                    : 'bg-slate-800/50 border-transparent opacity-50'
-                                            : 'bg-slate-800 hover:bg-slate-700 border-slate-700 hover:border-amber-500/50 text-slate-200'
+                                        ? opt === question.correctAnswer
+                                            ? 'bg-emerald-500/20 border-emerald-500 text-emerald-100'
+                                            : opt === selectedOption
+                                                ? 'bg-red-500/20 border-red-500 text-red-100'
+                                                : 'bg-slate-800/50 border-transparent opacity-50'
+                                        : 'bg-slate-800 hover:bg-slate-700 border-slate-700 hover:border-amber-500/50 text-slate-200'
                                         }`}
                                 >
                                     <div className="flex items-center justify-between">
@@ -187,8 +188,8 @@ export function LessonGenerator() {
 
                     {isAnswered && (
                         <div className={`mt-8 p-4 rounded-xl w-full max-w-md text-left animate-in fade-in slide-in-from-bottom-2 ${selectedOption === question.correctAnswer
-                                ? 'bg-emerald-500/10 border border-emerald-500/30'
-                                : 'bg-red-500/10 border border-red-500/30'
+                            ? 'bg-emerald-500/10 border border-emerald-500/30'
+                            : 'bg-red-500/10 border border-red-500/30'
                             }`}>
                             <p className={`font-bold mb-1 ${selectedOption === question.correctAnswer ? 'text-emerald-400' : 'text-red-400'
                                 }`}>

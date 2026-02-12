@@ -9,7 +9,7 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { Send, RotateCcw, Sparkles, Download, Keyboard, AlertCircle, Trophy, BarChart3, Book, Flame, X, ShoppingBag, Crown, Globe, History, Coins } from 'lucide-react';
 import { useLanguageStore } from '@/store/useLanguageStore';
-import { model, chatModel } from '@/lib/gemini';
+import { aiService } from '@/lib/aiCore';
 import { Message } from '@/types/languageTypes';
 import { SetupModal } from './SetupModal';
 import { ChatMessage } from './ChatMessage';
@@ -17,6 +17,7 @@ import { VoiceInput } from './VoiceInput';
 import { ConversationStarters } from './ConversationStarters';
 import { QuickReplies } from './QuickReplies';
 import { ProgressPanel } from './ProgressPanel';
+import { CouncilFeedback } from './CouncilFeedback';
 import { MessageSkeleton } from './LoadingSkeletons';
 import { useLanguageCoachShortcuts, KeyboardShortcutsHelp } from '@/hooks/useLanguageCoachShortcuts';
 import { exportConversation } from '@/lib/conversationExport';
@@ -37,9 +38,11 @@ import dynamic from 'next/dynamic';
 // Performance: Dynamic Imports for heavy dashboards and secondary views
 const AnalyticsDashboard = dynamic(() => import('./AnalyticsDashboard').then(mod => mod.AnalyticsDashboard), { ssr: false });
 const VocabularyDashboard = dynamic(() => import('./VocabularyFlashcards').then(mod => mod.VocabularyDashboard), { ssr: false });
+const FlashcardReview = dynamic(() => import('./VocabularyFlashcards').then(mod => mod.FlashcardReview), { ssr: false });
 const LessonGenerator = dynamic(() => import('./LessonGenerator').then(mod => mod.LessonGenerator), { ssr: false });
 const Shop = dynamic(() => import('./Shop').then(mod => mod.Shop), { ssr: false });
 const Leaderboard = dynamic(() => import('./Leaderboard').then(mod => mod.Leaderboard), { ssr: false });
+import { SynthesisOverlay } from './SynthesisOverlay';
 const AvatarCustomizer = dynamic(() => import('./AvatarCustomizer').then(mod => mod.AvatarCustomizer), { ssr: false });
 const ScenarioSelector = dynamic(() => import('./ScenarioSelector').then(mod => mod.ScenarioSelector), { ssr: false });
 const ScenarioBuilder = dynamic(() => import('./ScenarioBuilder').then(mod => mod.ScenarioBuilder), { ssr: false });
@@ -50,19 +53,28 @@ import { AmbientManager } from './AmbientManager';
 export function LanguageCoach() {
     const {
         targetLanguage,
-        skillLevel,
-        messages,
+        skillLevels,
+        messages: allMessages,
         isInitialized,
         setLanguage,
         setSkillLevel,
         addMessage,
-        resetConversation,
+        resetAll,
         coins,
         avatarConfig,
-        currentScenario, // Ensure this is present
+        currentScenarios,
         setScenario,
-        initialize
+        initialize,
+        vocabulary: allVocabulary,
+        addVocabularyCard,
+        updateVocabularyCard
     } = useLanguageStore();
+
+    const langCode = targetLanguage?.code || 'global';
+    const messages = allMessages[langCode] || [];
+    const skillLevel = skillLevels[langCode];
+    const currentScenario = currentScenarios[langCode];
+    const vocabulary = allVocabulary[langCode] || [];
 
     // Sensory Hooks
     const { playSound } = useSound();
@@ -75,9 +87,12 @@ export function LanguageCoach() {
     const [showScenarioBuilder, setShowScenarioBuilder] = useState(false);
     const [showAvatarCustomizer, setShowAvatarCustomizer] = useState(false);
     const [showKeyboardHelp, setShowKeyboardHelp] = useState(false);
+    const [showSetup, setShowSetup] = useState(false);
     const [showMistakeVault, setShowMistakeVault] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [activeView, setActiveView] = useState<'chat' | 'achievements' | 'analytics' | 'vocabulary' | 'lessons' | 'shop' | 'leaderboard'>('chat');
+    const [isStudying, setIsStudying] = useState(false);
+    const [studyCardIndex, setStudyCardIndex] = useState(0);
 
     // Gamification State
     const [xp, setXp] = useState(1250); // Demo start XP
@@ -121,8 +136,8 @@ export function LanguageCoach() {
     }, [isInitialized, targetLanguage, skillLevel]);
 
     const handleReset = () => {
-        if (confirm('Are you sure you want to start over? This will reset your language and conversation history.')) {
-            resetConversation();
+        if (confirm('Are you sure you want to reset EVERYTHING? This will clear all languages and history.')) {
+            resetAll();
             setError(null);
             setXp(0);
             setLevel(calculateLevel(0));
@@ -220,11 +235,18 @@ export function LanguageCoach() {
             }
             `;
 
-            const result = await model.generateContent(prompt);
-            const responseText = result.response.text();
+            const aiResponse = await aiService.generateResponse({
+                messages: [],
+                systemPrompt: prompt,
+                targetLanguage: targetLanguage.name,
+                skillLevel: skillLevel
+            });
 
-            const cleanJson = responseText.replace(/```json|```/g, '').trim();
-            const aiData = JSON.parse(cleanJson);
+            const aiData = {
+                response: aiResponse.response,
+                translation: aiResponse.translation,
+                feedback: aiResponse.feedback
+            };
 
             const coachMessage: Message = {
                 id: Date.now().toString(),
@@ -321,21 +343,20 @@ export function LanguageCoach() {
             }
             `;
 
-            const result = await model.generateContent(prompt);
-            const responseText = result.response.text();
-
-            // Clean up code blocks if present
-            const cleanJson = responseText.replace(/```json|```/g, '').trim();
-            const aiData = JSON.parse(cleanJson);
+            const aiResponse = await aiService.generateResponse({
+                messages: messages,
+                systemPrompt: prompt,
+                targetLanguage: targetLanguage.name,
+                skillLevel: skillLevel
+            });
 
             const coachMessage: Message = {
                 id: (Date.now() + 1).toString(),
                 role: 'coach',
-                content: aiData.response,
+                content: aiResponse.response,
                 timestamp: new Date(),
-                translation: aiData.translation,
-                feedback: aiData.feedback || undefined,
-                cultureNote: aiData.cultureNote || undefined
+                translation: aiResponse.translation,
+                feedback: aiResponse.feedback || undefined,
             };
 
             addMessage(coachMessage);
@@ -412,15 +433,18 @@ export function LanguageCoach() {
         // console.log('Regenerating last response...');
     };
 
-    // Show setup modal if not initialized
-    if (!isInitialized || !targetLanguage || !skillLevel) {
+    // Show setup modal if not initialized or manually requested
+    if ((!isInitialized || !targetLanguage || !skillLevel) || showSetup) {
         return (
             <SetupModal
                 onComplete={(lang, level) => {
                     setLanguage(lang);
                     setSkillLevel(level);
                     initialize();
+                    setShowSetup(false);
                 }}
+                onClose={isInitialized ? () => setShowSetup(false) : undefined}
+                initialLanguage={targetLanguage}
             />
         );
     }
@@ -429,9 +453,11 @@ export function LanguageCoach() {
     const userMessageCount = messages.filter(m => m.role === 'user').length;
 
     return (
-        <div className="min-h-screen bg-slate-950 flex flex-col relative overflow-hidden">
-            {/* Background Texture */}
-            <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 pointer-events-none" />
+        <div className="min-h-[100dvh] bg-[#020617] flex flex-col relative overflow-hidden synapse-hud">
+            {/* Background Texture & Pulse */}
+            <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.03] pointer-events-none" />
+            <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-emerald-500/5 blur-[120px] rounded-full animate-float" />
+            <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-emerald-500/5 blur-[120px] rounded-full animate-float" style={{ animationDelay: '2s' }} />
 
             {/* Notifications */}
             <AmbientManager />
@@ -455,7 +481,7 @@ export function LanguageCoach() {
                 />
             )}
 
-            {/* Dynamic Imperial Header */}
+            {/* Synapse Terminal Header */}
             <motion.header
                 style={{
                     backgroundColor: headerBg,
@@ -463,42 +489,47 @@ export function LanguageCoach() {
                     paddingTop: headerPadding,
                     paddingBottom: headerPadding
                 }}
-                className="border-b border-slate-800 px-6 flex items-center justify-between sticky top-0 z-40 transition-all duration-300"
+                className="border-b border-emerald-500/10 px-4 md:px-6 flex flex-wrap items-center justify-between gap-2 sticky top-0 z-40 transition-all duration-300 backdrop-blur-3xl"
             >
-                <div className="flex items-center gap-6">
-                    <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 md:gap-6 py-2">
+                    <div className="flex items-center gap-2 md:gap-4">
                         <button
                             onClick={() => setShowAvatarCustomizer(true)}
-                            className="w-10 h-10 rounded-full bg-slate-800 border-2 border-slate-700 hover:border-amber-500 transition-all flex items-center justify-center text-2xl overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500"
-                            title="Customize Avatar"
-                            aria-label="Customize Avatar"
+                            className="w-12 h-12 rounded-none bg-slate-900 border border-emerald-500/20 hover:border-emerald-500/60 transition-all flex items-center justify-center text-2xl overflow-hidden focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-emerald-500 neon-pulse"
+                            title="Synapse Avatar"
+                            aria-label="Synapse Avatar"
                         >
-                            {/* Simple avatar preview */}
-                            <div className="w-full h-full bg-fuchsia-500 flex items-center justify-center text-white font-bold text-sm">
-                                ME
+                            <div className="w-full h-full bg-emerald-950 flex items-center justify-center text-emerald-400 font-black text-[10px] tracking-tighter uppercase">
+                                SYNP
                             </div>
                         </button>
-                        <div className="text-3xl animate-bounce-subtle">{targetLanguage.flag}</div>
-                        <div>
-                            <h1 className="text-xl font-bold text-white flex items-center gap-2">
-                                {targetLanguage.name} Coach
-                                <span className={`
-                                    text-[10px] px-2 py-0.5 rounded-full uppercase tracking-wider font-bold
-                                    ${skillLevel === 'Beginner' ? 'bg-emerald-500/20 text-emerald-400' :
-                                        skillLevel === 'Intermediate' ? 'bg-blue-500/20 text-blue-400' :
-                                            'bg-purple-500/20 text-purple-400'}
-                                `}>
-                                    {skillLevel}
-                                </span>
-                            </h1>
-                            <div className="flex items-center gap-2 text-xs text-slate-400">
-                                <Flame className="w-3 h-3 text-orange-500" />
-                                {streakData.currentStreak} Day Streak
+
+                        <button
+                            onClick={() => setShowSetup(true)}
+                            className="flex items-center gap-2 md:gap-4 hover:bg-emerald-500/5 p-1 px-3 rounded-none border-l border-emerald-500/20 transition-all group"
+                            title="Signal Shift"
+                        >
+                            <div className="text-2xl md:text-4xl animate-pulse group-hover:scale-110 transition-transform drop-shadow-[0_0_8px_rgba(16,185,129,0.4)]">{targetLanguage.flag}</div>
+                            <div className="text-left">
+                                <h1 className="text-xl md:text-2xl font-black text-white flex items-center gap-3 tracking-tighter uppercase">
+                                    {targetLanguage.name} <span className="text-emerald-500">Synapse</span>
+                                    <span className={`
+                                        text-[9px] px-2 py-0.5 rounded-none border border-emerald-500/20 uppercase tracking-[0.2em] font-black
+                                        ${skillLevel === 'Beginner' ? 'bg-emerald-500/10 text-emerald-400' :
+                                            skillLevel === 'Intermediate' ? 'bg-amber-500/10 text-amber-400' : 'bg-rose-500/10 text-rose-400'}
+                                    `}>
+                                        {skillLevel}
+                                    </span>
+                                </h1>
+                                <div className="flex items-center gap-3 text-[10px] font-black text-emerald-500/60 uppercase tracking-[0.3em]">
+                                    <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.8)]" />
+                                    Active Integration // {streakData.currentStreak} Day Streak
+                                </div>
                             </div>
-                        </div>
+                        </button>
                     </div>
 
-                    <div className="hidden md:block w-48">
+                    <div className="hidden lg:block w-56">
                         <XPBar
                             currentXP={level.xpProgress}
                             currentLevel={level.level}
@@ -653,14 +684,16 @@ export function LanguageCoach() {
             )}
 
             {/* Main Content Area */}
-            <main className="flex-1 overflow-y-auto px-6 py-8 relative">
-                <div className="max-w-4xl mx-auto h-full">
+            <main className="flex-1 flex flex-col relative overflow-hidden">
+                <SynthesisOverlay />
+                <div className="max-w-4xl mx-auto h-full overflow-y-auto px-6 py-8">
 
                     {/* VIEW: CHAT */}
                     {activeView === 'chat' && (
                         <>
                             {hasMessages && userMessageCount >= 3 && (
-                                <div className="mb-6 animate-in fade-in slide-in-from-top-4 duration-500">
+                                <div className="mb-6 space-y-6 animate-in fade-in slide-in-from-top-4 duration-500">
+                                    <CouncilFeedback level={level.level} streak={streakData.currentStreak} />
                                     <ProgressPanel messages={messages} />
                                 </div>
                             )}
@@ -676,7 +709,10 @@ export function LanguageCoach() {
                                 />
                             )}
 
-                            <div className="space-y-6">
+                            <div className="space-y-8 relative">
+                                {/* Vertical Connection Line */}
+                                <div className="absolute left-6 top-0 bottom-0 w-px bg-emerald-500/10 hidden md:block" />
+
                                 {messages.map((message) => (
                                     <ChatMessage
                                         key={message.id}
@@ -688,7 +724,15 @@ export function LanguageCoach() {
                                 ))}
                             </div>
 
-                            {isLoading && <MessageSkeleton />}
+                            {isLoading && (
+                                <div className="mt-8">
+                                    <MessageSkeleton />
+                                    <div className="flex items-center gap-2 mt-4 px-6 text-[10px] font-black text-emerald-500/40 uppercase tracking-widest animate-pulse">
+                                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                                        Streaming Neural Feedback...
+                                    </div>
+                                </div>
+                            )}
                             <div ref={messagesEndRef} />
                         </>
                     )}
@@ -733,28 +777,69 @@ export function LanguageCoach() {
                     {/* VIEW: VOCABULARY */}
                     {activeView === 'vocabulary' && (
                         <div className="animate-in fade-in duration-300">
-                            <h2 className="text-2xl font-bold text-white mb-6 flex items-center gap-3">
-                                <Book className="w-8 h-8 text-emerald-400" />
-                                Vocabulary Deck
+                            <h2 className="text-2xl font-bold text-white mb-6 flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                    <Book className="w-8 h-8 text-emerald-400" />
+                                    {targetLanguage?.name} Vocabulary Deck
+                                </div>
+                                {isStudying && (
+                                    <button
+                                        onClick={() => setIsStudying(false)}
+                                        className="btn-ghost text-sm px-4 py-2"
+                                    >
+                                        Exit Study
+                                    </button>
+                                )}
                             </h2>
-                            <VocabularyDashboard cards={[
-                                // Mock cards for demo
-                                {
-                                    id: '1', term: 'Hola', translation: 'Hello', language: 'Spanish', example: 'Hola, ¿cómo estás?',
-                                    category: 'Greetings', dateAdded: new Date(), easinessFactor: 2.5, interval: 1, repetitions: 0,
-                                    nextReviewDate: new Date(), masteryLevel: 'new', reviewCount: 0
-                                },
-                                {
-                                    id: '2', term: 'Biblioteca', translation: 'Library', language: 'Spanish', example: 'Voy a la biblioteca.',
-                                    category: 'Places', dateAdded: new Date(), easinessFactor: 2.5, interval: 1, repetitions: 2,
-                                    nextReviewDate: new Date(), masteryLevel: 'learning', reviewCount: 2
-                                },
-                                {
-                                    id: '3', term: 'Gracias', translation: 'Thank you', language: 'Spanish', example: 'Muchas gracias por todo.',
-                                    category: 'Essentials', dateAdded: new Date(), easinessFactor: 2.6, interval: 5, repetitions: 5,
-                                    nextReviewDate: new Date(Date.now() + 86400000), masteryLevel: 'mastered', reviewCount: 10
-                                }
-                            ]} />
+
+                            {isStudying ? (
+                                <div className="space-y-6">
+                                    <div className="flex justify-between items-center text-sm text-slate-500 mb-4 px-2">
+                                        <span>Progress: {studyCardIndex + 1} / {vocabulary.filter(c => new Date(c.nextReviewDate) <= new Date()).length}</span>
+                                        <div className="w-32 h-2 bg-slate-800 rounded-full overflow-hidden">
+                                            <div
+                                                className="h-full bg-emerald-500 transition-all duration-300"
+                                                style={{ width: `${((studyCardIndex + 1) / vocabulary.filter(c => new Date(c.nextReviewDate) <= new Date()).length) * 100}%` }}
+                                            />
+                                        </div>
+                                    </div>
+
+                                    {vocabulary.filter(c => new Date(c.nextReviewDate) <= new Date())[studyCardIndex] && (
+                                        <FlashcardReview
+                                            card={vocabulary.filter(c => new Date(c.nextReviewDate) <= new Date())[studyCardIndex]}
+                                            onReview={(quality: number) => {
+                                                const currentCard = vocabulary.filter(c => new Date(c.nextReviewDate) <= new Date())[studyCardIndex];
+                                                updateVocabularyCard(currentCard.id, quality);
+                                                playSound('success');
+
+                                                if (studyCardIndex < vocabulary.filter(c => new Date(c.nextReviewDate) <= new Date()).length - 1) {
+                                                    setStudyCardIndex(prev => prev + 1);
+                                                } else {
+                                                    setIsStudying(false);
+                                                    setStudyCardIndex(0);
+                                                    triggerXPGain(100, 'Vocabulary Session Complete');
+                                                }
+                                            }}
+                                            onSpeak={(text: string, lang: string) => {
+                                                // Simple speech synthesis for demo
+                                                const utterance = new SpeechSynthesisUtterance(text);
+                                                utterance.lang = lang === 'Spanish' ? 'es-ES' :
+                                                    lang === 'French' ? 'fr-FR' :
+                                                        lang === 'Japanese' ? 'ja-JP' : 'en-US';
+                                                window.speechSynthesis.speak(utterance);
+                                            }}
+                                        />
+                                    )}
+                                </div>
+                            ) : (
+                                <VocabularyDashboard
+                                    cards={vocabulary}
+                                    onStudy={() => {
+                                        setIsStudying(true);
+                                        setStudyCardIndex(0);
+                                    }}
+                                />
+                            )}
                         </div>
                     )}
 
@@ -776,20 +861,25 @@ export function LanguageCoach() {
                 </div>
             </main>
 
-            {/* Input Footer (Only visible in Chat View) */}
+            {/* Synapse Input Console */}
             {activeView === 'chat' && (
-                <footer className="glass-card border-t border-slate-800 px-6 py-4 sticky bottom-0 z-40">
+                <footer className="bg-slate-950/80 backdrop-blur-3xl border-t border-emerald-500/10 px-6 py-6 sticky bottom-0 z-40">
                     <div className="max-w-4xl mx-auto">
+                        <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-emerald-500/20 to-transparent" />
+
                         {hasMessages && (
-                            <QuickReplies
-                                language={targetLanguage.name}
-                                level={skillLevel}
-                                onSelect={handleQuickReply}
-                            />
+                            <div className="mb-4">
+                                <QuickReplies
+                                    language={targetLanguage.name}
+                                    level={skillLevel}
+                                    onSelect={handleQuickReply}
+                                />
+                            </div>
                         )}
 
-                        <div className="flex items-end gap-3">
-                            <div className="flex-1">
+                        <div className="flex items-end gap-4 relative">
+                            <div className="flex-1 relative group">
+                                <div className="absolute -inset-0.5 bg-emerald-500/10 rounded-none blur opacity-0 group-focus-within:opacity-100 transition duration-500" />
                                 <textarea
                                     ref={inputRef}
                                     value={inputValue}
@@ -798,29 +888,33 @@ export function LanguageCoach() {
                                         playSound('typing');
                                     }}
                                     onKeyDown={handleKeyPress}
-                                    placeholder={`Type your message in ${targetLanguage.name}...`}
+                                    placeholder={`INTEGRATE SIGNAL [${targetLanguage.name}]...`}
                                     aria-label={`Message in ${targetLanguage.name}`}
                                     disabled={isLoading}
                                     rows={1}
-                                    className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-slate-200 placeholder-slate-600 resize-none focus:outline-none focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500/50 transition-all disabled:opacity-50 min-h-[50px] max-h-[120px]"
+                                    className="w-full bg-slate-900/50 border border-emerald-500/20 rounded-none px-6 py-4 text-emerald-50 placeholder-emerald-900 selection:bg-emerald-500/30 resize-none focus:outline-none focus:border-emerald-500/50 transition-all disabled:opacity-50 min-h-[60px] max-h-[150px] font-mono text-sm tracking-tight"
                                     maxLength={500}
                                 />
+                                <div className="absolute bottom-2 right-4 text-[8px] font-black text-emerald-500/20 uppercase tracking-widest">
+                                    Terminal Input // v2.0
+                                </div>
                             </div>
 
-                            <VoiceInput
-                                language={`${targetLanguage.code}-${targetLanguage.code.toUpperCase()}`}
-                                onTranscript={handleVoiceTranscript}
-                                disabled={isLoading}
-                            />
+                            <div className="flex items-center gap-2">
+                                <VoiceInput
+                                    language={`${targetLanguage.code}-${targetLanguage.code.toUpperCase()}`}
+                                    onTranscript={handleVoiceTranscript}
+                                    disabled={isLoading}
+                                />
 
-                            <button
-                                onClick={handleSendMessage}
-                                disabled={!inputValue.trim() || isLoading}
-                                className="btn-primary px-6 py-3 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed h-[50px]"
-                            >
-                                <Send className="w-5 h-5" />
-                                <span className="hidden sm:inline">Send</span>
-                            </button>
+                                <button
+                                    onClick={handleSendMessage}
+                                    disabled={!inputValue.trim() || isLoading}
+                                    className="px-8 py-4 bg-emerald-500 text-slate-950 font-black uppercase tracking-[0.2em] text-xs transition-all hover:bg-emerald-400 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-30 disabled:grayscale h-[60px] shadow-[0_0_20px_rgba(16,185,129,0.2)]"
+                                >
+                                    Transmit
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </footer>
@@ -858,6 +952,17 @@ export function LanguageCoach() {
 
             {/* AI Real-time Feedback */}
             {targetLanguage && <AICoachFeedback messages={messages} targetLanguage={targetLanguage.name} />}
+
+            <footer className="mt-20 py-12 border-t border-slate-800 max-w-4xl mx-auto">
+                <div className="flex flex-col md:flex-row justify-between items-center gap-6 text-slate-500 text-[10px] font-bold tracking-[0.2em] uppercase">
+                    <p>© 2026 MCJP Ecosystem | Precise. Powerful. Productive.</p>
+                    <div className="flex gap-8">
+                        <span className="hover:text-blue-400 cursor-pointer transition-colors">Immersion Logs</span>
+                        <span className="hover:text-blue-400 cursor-pointer transition-colors">Neural Sovereignty</span>
+                        <span className="hover:text-blue-400 cursor-pointer transition-colors">API Health</span>
+                    </div>
+                </div>
+            </footer>
         </div>
     );
 }

@@ -1,0 +1,20 @@
+[
+    {
+        "id": "lang-1",
+        "role": "Linguistic Guide",
+        "text": "Neural bandwidth optimized. Your prefrontal cortex is primed for complex syntax acquisition.",
+        "type": "optimization"
+    },
+    {
+        "id": "lang-2",
+        "role": "The Oracle",
+        "text": "Global language patterns verified. You are now communicating at 85% efficiency within the target domain.",
+        "type": "insight"
+    },
+    {
+        "id": "lang-3",
+        "role": "Scribe",
+        "text": "Communication audit complete. All linguistic logs has been synchronized for the active agent.",
+        "type": "verification"
+    }
+]

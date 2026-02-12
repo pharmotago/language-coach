@@ -8,8 +8,14 @@ import { ClientLayout } from "@/components/ClientLayout";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-    title: "Language Coach AI",
+    title: {
+        default: "Language Coach AI",
+        template: "%s | Language Coach AI"
+    },
     description: "Premium AI Language Immersion & Real-time Feedback.",
+    icons: {
+        icon: '/favicon.png',
+    },
     manifest: "/manifest.json",
     metadataBase: new URL('https://languagecoach.ai'),
     themeColor: [

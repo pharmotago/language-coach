@@ -22,7 +22,7 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
     });
 
     useEffect(() => {
-        const saved = localStorage.getItem('stoic-dad-settings');
+        const saved = localStorage.getItem('language-coach-settings');
         if (saved) {
             setSettings(JSON.parse(saved));
         }
@@ -31,7 +31,7 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
     const updateSetting = (key: keyof UserSettings, value: boolean) => {
         const newSettings = { ...settings, [key]: value };
         setSettings(newSettings);
-        localStorage.setItem('stoic-dad-settings', JSON.stringify(newSettings));
+        localStorage.setItem('language-coach-settings', JSON.stringify(newSettings));
     };
 
     if (!isOpen) return null;

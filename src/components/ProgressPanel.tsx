@@ -68,8 +68,8 @@ export function ProgressPanel({ messages, streak = 0 }: ProgressPanelProps) {
             {/* Progress Bar */}
             <div className="mt-6">
                 <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs text-slate-400">Session Progress</span>
-                    <span className="text-xs font-semibold text-amber-400">
+                    <span className="text-xs text-white/60">Session Progress</span>
+                    <span className="text-xs font-black text-amber-500 uppercase tracking-widest">
                         {stats.totalMessages} messages
                     </span>
                 </div>
@@ -79,7 +79,7 @@ export function ProgressPanel({ messages, streak = 0 }: ProgressPanelProps) {
                         style={{ width: `${Math.min((stats.totalMessages / 20) * 100, 100)}%` }}
                     />
                 </div>
-                <p className="text-xs text-slate-500 mt-1">
+                <p className="text-[10px] font-black text-white/40 uppercase tracking-widest mt-2 overflow-hidden text-ellipsis whitespace-nowrap">
                     {20 - stats.totalMessages > 0 ? `${20 - stats.totalMessages} more to reach goal` : 'Goal reached! 🎉'}
                 </p>
             </div>
@@ -101,12 +101,12 @@ function StatCard({ icon, label, value, color }: {
     };
 
     return (
-        <div className="glass-card-light p-3 rounded-lg">
+        <div className="glass-card-light p-3 rounded-lg border border-white/5">
             <div className={`w-8 h-8 rounded-lg ${colorClasses[color]} flex items-center justify-center mb-2`}>
                 {icon}
             </div>
-            <div className="text-2xl font-bold text-white mb-1">{value}</div>
-            <div className="text-xs text-slate-500">{label}</div>
+            <div className="text-2xl font-black text-white mb-1 tracking-tight">{value}</div>
+            <div className="text-[10px] font-black text-white/40 uppercase tracking-widest">{label}</div>
         </div>
     );
 }

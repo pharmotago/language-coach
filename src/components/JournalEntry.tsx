@@ -10,7 +10,7 @@ interface JournalEntryProps {
 
 export function JournalEntry({ moduleId, moduleTitle, isOpen, onClose }: JournalEntryProps) {
     const [entry, setEntry] = useState('');
-    const storageKey = `stoic-dad-journal-${moduleId}`;
+    const storageKey = `language-coach-logs-${moduleId}`;
 
     useEffect(() => {
         if (isOpen) {

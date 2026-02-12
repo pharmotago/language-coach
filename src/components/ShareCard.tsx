@@ -12,7 +12,7 @@ interface ShareCardProps {
     username?: string;
 }
 
-export function ShareCard({ totalXp, streak, level, completedModules, username = "Stoic Initiate" }: ShareCardProps) {
+export function ShareCard({ totalXp, streak, level, completedModules, username = "Immersion Student" }: ShareCardProps) {
     return (
         <div className="w-full max-w-sm mx-auto bg-slate-950 border-4 border-slate-800 rounded-3xl overflow-hidden shadow-2xl relative group">
             {/* Ambient Background */}
@@ -23,7 +23,7 @@ export function ShareCard({ totalXp, streak, level, completedModules, username =
             <div className="relative p-8 flex flex-col items-center text-center">
                 {/* Header */}
                 <div className="mb-6">
-                    <h2 className="text-2xl font-bold text-white mb-1">THE STOIC DAD</h2>
+                    <h2 className="text-2xl font-bold text-white mb-1">LANGUAGE COACH AI</h2>
                     <div className="h-1 w-12 bg-amber-500 mx-auto rounded-full" />
                 </div>
 
@@ -51,7 +51,7 @@ export function ShareCard({ totalXp, streak, level, completedModules, username =
                 {/* Footer */}
                 <div className="flex items-center gap-2 text-slate-500 text-sm">
                     <Shield className="w-4 h-4" />
-                    <span>Join the path at stoicdad.app</span>
+                    <span>Join the path at languagecoach.ai</span>
                 </div>
             </div>
 

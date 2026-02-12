@@ -35,11 +35,11 @@ class AnalyticsEngine {
 
     private persist(event: AnalyticsEvent) {
         try {
-            const history = JSON.parse(localStorage.getItem('stoic_analytics') || '[]');
+            const history = JSON.parse(localStorage.getItem('language_coach_analytics') || '[]');
             history.push(event);
             // Keep last 1000 events
             if (history.length > 1000) history.shift();
-            localStorage.setItem('stoic_analytics', JSON.stringify(history));
+            localStorage.setItem('language_coach_analytics', JSON.stringify(history));
         } catch (e) {
             console.error('Analytics persistence failed', e);
         }
