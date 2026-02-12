@@ -306,7 +306,8 @@ export function createAIProvider(
         case 'anthropic':
             return new AnthropicAdapter(apiKey, model || 'claude-3-5-sonnet-20240620');
         case 'gemini':
-            return new GeminiAdapter(apiKey, model || 'gemini-1.5-flash');
+            // Feb 2026 Standard: gemini-3-flash-preview
+            return new GeminiAdapter(apiKey, model || 'gemini-3-flash-preview');
         default:
             throw new Error(`Unknown provider: ${provider}`);
     }

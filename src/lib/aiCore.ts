@@ -7,12 +7,12 @@ const anthropicKey = process.env.NEXT_PUBLIC_ANTHROPIC_API_KEY || '';
 const providers: AIProvider[] = [];
 
 // 1. Primary: Gemini 3 Flash (Modern Standard as of Feb 2026)
-// Note: Gemini 1.5 Flash is deprecated and non-functional in current API versions.
+// We add multiple Gemini models for intra-provider quota resilience
 if (geminiKey) {
-    providers.push(createAIProvider('gemini', geminiKey, 'gemini-3-flash-preview'));
-    // Fallback within Gemini for quota resilience
-    providers.push(createAIProvider('gemini', geminiKey, 'gemini-2.5-flash-lite'));
-    providers.push(createAIProvider('gemini', geminiKey, 'gemini-flash-latest'));
+    const geminiModels = ['gemini-3-flash-preview', 'gemini-2.5-flash-lite', 'gemini-flash-latest'];
+    geminiModels.forEach(model => {
+        providers.push(createAIProvider('gemini', geminiKey, model));
+    });
 }
 
 // 2. Secondary: OpenAI GPT-4o

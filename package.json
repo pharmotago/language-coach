@@ -12,7 +12,6 @@
         "evolve:daemon": "node scripts/evolve.js --daemon"
     },
     "dependencies": {
-        "@google/generative-ai": "^0.24.1",
         "@tailwindcss/typography": "^0.5.19",
         "canvas-confetti": "^1.9.3",
         "clsx": "^2.1.0",
