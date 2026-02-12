@@ -5,10 +5,9 @@ import { cn } from "@/lib/utils";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { ClientLayout } from "@/components/ClientLayout";
 import Script from "next/script";
+import { CONFIG } from "@/lib/config";
 
 const inter = Inter({ subsets: ["latin"] });
-
-const ADSENSE_PUB_ID = "pub-1966724508656296";
 
 export const metadata: Metadata = {
     title: {
@@ -20,7 +19,7 @@ export const metadata: Metadata = {
         icon: '/favicon.png',
     },
     manifest: "/manifest.json",
-    metadataBase: new URL('https://languagecoach.ai'),
+    metadataBase: new URL(CONFIG.BASE_URL),
     themeColor: [
         { media: '(prefers-color-scheme: dark)', color: '#020617' },
     ],
@@ -38,7 +37,7 @@ export const metadata: Metadata = {
     openGraph: {
         title: "Language Coach AI",
         description: "Level up your fluency with an AI tutor that talks back. Real-time grammar & accent feedback.",
-        url: "https://languagecoach.ai",
+        url: CONFIG.BASE_URL,
         siteName: "Language Coach AI",
         images: [
             {
@@ -66,7 +65,7 @@ export default function RootLayout({
                     id="adsense-init"
                     async
                     strategy="afterInteractive"
-                    src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE_PUB_ID}`}
+                    src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${CONFIG.ADSENSE_PUB_ID}`}
                     crossOrigin="anonymous"
                 />
             </head>

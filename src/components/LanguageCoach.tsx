@@ -7,7 +7,7 @@
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, useScroll, useTransform } from 'framer-motion';
-import { Send, RotateCcw, Sparkles, Download, Keyboard, AlertCircle, Trophy, BarChart3, Book, Flame, X, ShoppingBag, Crown, Globe, History, Coins } from 'lucide-react';
+import { Send, RotateCcw, Sparkles, Download, Keyboard, Trophy, BarChart3, Book, X, ShoppingBag, Crown, Globe, History } from 'lucide-react';
 import { useLanguageStore } from '@/store/useLanguageStore';
 import { aiService } from '@/lib/aiCore';
 import { Message } from '@/types/languageTypes';
@@ -23,6 +23,7 @@ import { useLanguageCoachShortcuts, KeyboardShortcutsHelp } from '@/hooks/useLan
 import { exportConversation } from '@/lib/conversationExport';
 import { shareReferral } from '@/lib/referral';
 import { AdSense } from './AdSense';
+import { SynapseHeader } from './SynapseHeader';
 
 // Phase 2 Integrations
 import { AchievementsList, AchievementUnlockNotification, DEFAULT_ACHIEVEMENTS, Achievement } from './AchievementSystem';
@@ -483,198 +484,32 @@ export function LanguageCoach() {
             )}
 
             {/* Synapse Terminal Header */}
-            <motion.header
-                style={{
-                    backgroundColor: headerBg,
-                    backdropFilter: headerBlur,
-                    paddingTop: headerPadding,
-                    paddingBottom: headerPadding
+            <SynapseHeader
+                headerBg={headerBg}
+                headerBlur={headerBlur}
+                headerPadding={headerPadding}
+                targetLanguage={targetLanguage}
+                skillLevel={skillLevel}
+                streakData={streakData}
+                level={level}
+                activeView={activeView}
+                setActiveView={setActiveView}
+                onAvatarClick={() => setShowAvatarCustomizer(true)}
+                onSetupClick={() => setShowSetup(true)}
+                onExportClick={handleExport}
+                onScenariosClick={() => setShowScenarios(true)}
+                onReferralClick={async () => {
+                    const result = await shareReferral('user123');
+                    if (result.success) {
+                        playSound('success');
+                        triggerHaptic(HapticPatterns.success);
+                        analytics.track('referral_shared', { method: result.method });
+                        triggerXPGain(500, 'Referral Shared');
+                    }
                 }}
-                className="border-b border-emerald-500/10 px-4 md:px-6 flex flex-wrap items-center justify-between gap-2 sticky top-0 z-40 transition-all duration-300 backdrop-blur-3xl"
-            >
-                <div className="flex items-center gap-3 md:gap-6 py-2">
-                    <div className="flex items-center gap-2 md:gap-4">
-                        <button
-                            onClick={() => setShowAvatarCustomizer(true)}
-                            className="w-12 h-12 rounded-none bg-slate-900 border border-emerald-500/20 hover:border-emerald-500/60 transition-all flex items-center justify-center text-2xl overflow-hidden focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-emerald-500 neon-pulse"
-                            title="Synapse Avatar"
-                            aria-label="Synapse Avatar"
-                        >
-                            <div className="w-full h-full bg-emerald-950 flex items-center justify-center text-emerald-400 font-black text-[10px] tracking-tighter uppercase">
-                                SYNP
-                            </div>
-                        </button>
-
-                        <button
-                            onClick={() => setShowSetup(true)}
-                            className="flex items-center gap-2 md:gap-4 hover:bg-emerald-500/5 p-1 px-3 rounded-none border-l border-emerald-500/20 transition-all group"
-                            title="Signal Shift"
-                        >
-                            <div className="text-2xl md:text-4xl animate-pulse group-hover:scale-110 transition-transform drop-shadow-[0_0_8px_rgba(16,185,129,0.4)]">{targetLanguage.flag}</div>
-                            <div className="text-left">
-                                <h1 className="text-xl md:text-2xl font-black text-white flex items-center gap-3 tracking-tighter uppercase">
-                                    {targetLanguage.name} <span className="text-emerald-500">Synapse</span>
-                                    <span className={`
-                                        text-[9px] px-2 py-0.5 rounded-none border border-emerald-500/20 uppercase tracking-[0.2em] font-black
-                                        ${skillLevel === 'Beginner' ? 'bg-emerald-500/10 text-emerald-400' :
-                                            skillLevel === 'Intermediate' ? 'bg-amber-500/10 text-amber-400' : 'bg-rose-500/10 text-rose-400'}
-                                    `}>
-                                        {skillLevel}
-                                    </span>
-                                </h1>
-                                <div className="flex items-center gap-3 text-[10px] font-black text-emerald-500/60 uppercase tracking-[0.3em]">
-                                    <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.8)]" />
-                                    Active Integration // {streakData.currentStreak} Day Streak
-                                </div>
-                            </div>
-                        </button>
-                    </div>
-
-                    <div className="hidden lg:block w-56">
-                        <XPBar
-                            currentXP={level.xpProgress}
-                            currentLevel={level.level}
-                            xpForNextLevel={level.xpForNext}
-                            compact
-                        />
-                    </div>
-                </div>
-
-                <div className="flex items-center gap-2">
-                    {/* View Toggles */}
-                    <nav className="flex bg-slate-900/50 rounded-lg p-1 mr-2 border border-slate-800" aria-label="Main Navigation">
-                        <button
-                            onClick={() => setActiveView('chat')}
-                            className={`p-2 rounded-md transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 ${activeView === 'chat' ? 'bg-slate-700 text-white shadow-sm' : 'text-slate-400 hover:text-white'}`}
-                            title="Chat"
-                            aria-label="View Chat"
-                            aria-pressed={activeView === 'chat'}
-                        >
-                            <Send className="w-4 h-4" aria-hidden="true" />
-                        </button>
-                        <button
-                            onClick={() => setActiveView('lessons')}
-                            className={`p-2 rounded-md transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 ${activeView === 'lessons' ? 'bg-slate-700 text-white shadow-sm' : 'text-slate-400 hover:text-white'}`}
-                            title="Lessons"
-                            aria-label="View Lessons"
-                            aria-pressed={activeView === 'lessons'}
-                        >
-                            <Sparkles className="w-4 h-4" aria-hidden="true" />
-                        </button>
-                        <button
-                            onClick={() => setActiveView('vocabulary')}
-                            className={`p-2 rounded-md transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 ${activeView === 'vocabulary' ? 'bg-slate-700 text-white shadow-sm' : 'text-slate-400 hover:text-white'}`}
-                            title="Vocabulary"
-                            aria-label="View Vocabulary"
-                            aria-pressed={activeView === 'vocabulary'}
-                        >
-                            <Book className="w-4 h-4" aria-hidden="true" />
-                        </button>
-                        <button
-                            onClick={() => setActiveView('achievements')}
-                            className={`p-2 rounded-md transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 ${activeView === 'achievements' ? 'bg-slate-700 text-white shadow-sm' : 'text-slate-400 hover:text-white'}`}
-                            title="Achievements"
-                            aria-label="View Achievements"
-                            aria-pressed={activeView === 'achievements'}
-                        >
-                            <Trophy className="w-4 h-4" aria-hidden="true" />
-                        </button>
-                        <button
-                            onClick={() => setActiveView('leaderboard')}
-                            className={`p-2 rounded-md transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 ${activeView === 'leaderboard' ? 'bg-slate-700 text-white shadow-sm' : 'text-slate-400 hover:text-white'}`}
-                            title="Leaderboard"
-                            aria-label="View Leaderboard"
-                            aria-pressed={activeView === 'leaderboard'}
-                        >
-                            <Crown className="w-4 h-4 text-amber-500" aria-hidden="true" />
-                        </button>
-                        <button
-                            onClick={() => setActiveView('analytics')}
-                            className={`p-2 rounded-md transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 ${activeView === 'analytics' ? 'bg-slate-700 text-white shadow-sm' : 'text-slate-400 hover:text-white'}`}
-                            title="Analytics"
-                            aria-label="View Analytics"
-                            aria-pressed={activeView === 'analytics'}
-                        >
-                            <BarChart3 className="w-4 h-4" aria-hidden="true" />
-                        </button>
-                        <button
-                            onClick={() => setActiveView('shop')}
-                            className={`p-2 rounded-md transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 ${activeView === 'shop' ? 'bg-slate-700 text-white shadow-sm' : 'text-slate-400 hover:text-white'}`}
-                            title="Item Shop"
-                            aria-label="View Item Shop"
-                            aria-pressed={activeView === 'shop'}
-                        >
-                            <ShoppingBag className="w-4 h-4 text-emerald-400" aria-hidden="true" />
-                        </button>
-                    </nav>
-
-                    <button
-                        onClick={() => setShowMistakeVault(true)}
-                        className="btn-ghost text-sm px-3 py-2 text-rose-400 hover:text-rose-300 relative group"
-                        title="Mistake Vault"
-                        aria-label="Open Mistake History"
-                    >
-                        <History className="w-4 h-4" />
-                        <span className="sr-only">Mistakes</span>
-                    </button>
-
-                    <button
-                        onClick={() => setShowKeyboardHelp(!showKeyboardHelp)}
-                        className="btn-ghost text-sm px-3 py-2"
-                        title="Shortcuts"
-                        aria-label="Keyboard Shortcuts"
-                    >
-                        <Keyboard className="w-4 h-4" />
-                    </button>
-
-                    <button
-                        onClick={handleExport}
-                        disabled={messages.length === 0}
-                        className="btn-ghost text-sm px-3 py-2 disabled:opacity-50"
-                        title="Export"
-                        aria-label="Export Conversation"
-                    >
-                        <Download className="w-4 h-4" />
-                    </button>
-
-                    <button
-                        onClick={() => setShowScenarios(true)}
-                        className="btn-ghost text-sm px-3 py-2 flex items-center gap-2"
-                        aria-label="Select Scenario"
-                    >
-                        <Sparkles className="w-4 h-4 text-amber-400" />
-                        <span className="hidden sm:inline">Scenarios</span>
-                    </button>
-
-                    <button
-                        onClick={async () => {
-                            const result = await shareReferral('user123'); // Demo ID
-                            if (result.success) {
-                                playSound('success');
-                                triggerHaptic(HapticPatterns.success);
-                                analytics.track('referral_shared', { method: result.method });
-                                setXp(prev => prev + 500);
-                                setXpGain({ amount: 500, reason: 'Referral Shared' });
-                            }
-                        }}
-                        className="btn-ghost text-sm px-3 py-2 flex items-center gap-2 text-amber-500 font-bold"
-                        title="Invite Friend"
-                        aria-label="Invite Friend for 500 XP"
-                    >
-                        <Globe className="w-4 h-4" />
-                        <span className="hidden lg:inline">Invite Friend (+500 XP)</span>
-                    </button>
-
-                    <button
-                        onClick={handleReset}
-                        className="btn-ghost text-sm px-3 py-2"
-                        title="Reset"
-                        aria-label="Reset Conversation"
-                    >
-                        <RotateCcw className="w-4 h-4" />
-                    </button>
-                </div>
-            </motion.header>
+                onResetClick={handleReset}
+                messagesLength={messages.length}
+            />
 
             {/* Keyboard Shortcuts Help */}
             {showKeyboardHelp && (
