@@ -6,7 +6,8 @@ const anthropicKey = process.env.NEXT_PUBLIC_ANTHROPIC_API_KEY || '';
 
 const providers: AIProvider[] = [];
 
-// 1. Primary: Gemini 3 Flash (Modern Standard)
+// 1. Primary: Gemini 3 Flash (Modern Standard as of Feb 2026)
+// Note: Gemini 1.5 Flash is deprecated and non-functional in current API versions.
 if (geminiKey) {
     providers.push(createAIProvider('gemini', geminiKey, 'gemini-3-flash-preview'));
     // Fallback within Gemini for quota resilience

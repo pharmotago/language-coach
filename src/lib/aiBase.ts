@@ -187,6 +187,8 @@ export class AnthropicAdapter implements AIProvider {
 }
 
 // Google Gemini Adapter (FETCH BASED - bypassing SDK)
+// CRITICAL: As of February 2026, Gemini 1.5 Flash is DEPRECATED and returns 404.
+// Use Gemini 3 Flash Preview or 2.0 variants for stable production availability.
 export class GeminiAdapter implements AIProvider {
     name = 'Google Gemini';
     private apiKey: string;
