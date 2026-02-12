@@ -166,7 +166,7 @@ export class GeminiAdapter implements AIProvider {
     private apiKey: string;
     private model: string;
 
-    constructor(apiKey: string, model: string = 'gemini-2.0-flash') {
+    constructor(apiKey: string, model: string = 'gemini-3-flash-preview') {
         this.apiKey = apiKey;
         this.model = model;
     }

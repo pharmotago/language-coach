@@ -6,9 +6,12 @@ const anthropicKey = process.env.NEXT_PUBLIC_ANTHROPIC_API_KEY || '';
 
 const providers: AIProvider[] = [];
 
-// 1. Primary: Gemini 1.5 Flash (Targeting Stability)
+// 1. Primary: Gemini 3 Flash (Modern Standard)
 if (geminiKey) {
-    providers.push(createAIProvider('gemini', geminiKey, 'gemini-2.0-flash'));
+    providers.push(createAIProvider('gemini', geminiKey, 'gemini-3-flash-preview'));
+    // Fallback within Gemini for quota resilience
+    providers.push(createAIProvider('gemini', geminiKey, 'gemini-2.5-flash-lite'));
+    providers.push(createAIProvider('gemini', geminiKey, 'gemini-flash-latest'));
 }
 
 // 2. Secondary: OpenAI GPT-4o
@@ -25,7 +28,7 @@ if (anthropicKey) {
 if (providers.length === 0) {
     console.warn('No AI API keys found in environment variables. AI features will fail.');
     // Add Gemini as a placeholder
-    providers.push(createAIProvider('gemini', 'MISSING_KEY', 'gemini-2.0-flash'));
+    providers.push(createAIProvider('gemini', 'MISSING_KEY', 'gemini-3-flash-preview'));
 }
 
 export const aiService = new TieredAIProvider(providers);
