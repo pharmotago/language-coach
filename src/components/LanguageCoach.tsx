@@ -43,7 +43,7 @@ const FlashcardReview = dynamic(() => import('./VocabularyFlashcards').then(mod 
 const LessonGenerator = dynamic(() => import('./LessonGenerator').then(mod => mod.LessonGenerator), { ssr: false });
 const Shop = dynamic(() => import('./Shop').then(mod => mod.Shop), { ssr: false });
 const Leaderboard = dynamic(() => import('./Leaderboard').then(mod => mod.Leaderboard), { ssr: false });
-import { SynthesisOverlay } from './SynthesisOverlay';
+
 const AvatarCustomizer = dynamic(() => import('./AvatarCustomizer').then(mod => mod.AvatarCustomizer), { ssr: false });
 const ScenarioSelector = dynamic(() => import('./ScenarioSelector').then(mod => mod.ScenarioSelector), { ssr: false });
 const ScenarioBuilder = dynamic(() => import('./ScenarioBuilder').then(mod => mod.ScenarioBuilder), { ssr: false });
@@ -686,8 +686,10 @@ export function LanguageCoach() {
 
             {/* Main Content Area */}
             <main className="flex-1 flex flex-col relative overflow-hidden">
-                <SynthesisOverlay />
+
                 <div className="max-w-4xl mx-auto h-full overflow-y-auto px-6 py-8">
+                    {/* Ad Placement: Top of Chat Content */}
+                    <AdSense adSlot="chat-top-banner" adFormat="horizontal" />
 
                     {/* VIEW: CHAT */}
                     {activeView === 'chat' && (
@@ -735,6 +737,8 @@ export function LanguageCoach() {
                                 </div>
                             )}
                             <div ref={messagesEndRef} />
+                            {/* Ad Placement: Bottom of Chat Content */}
+                            <AdSense adSlot="chat-bottom" adFormat="auto" />
                         </>
                     )}
 
