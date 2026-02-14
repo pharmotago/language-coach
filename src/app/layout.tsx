@@ -9,34 +9,32 @@ import { CONFIG } from "@/lib/config";
 
 const inter = Inter({ subsets: ["latin"] });
 
+export const viewport = {
+    width: 'device-width',
+    initialScale: 1,
+    maximumScale: 1,
+    userScalable: false,
+};
+
 export const metadata: Metadata = {
     title: {
-        default: "Language Coach AI",
+        default: "Language Coach AI | Neural Sync Protocol",
         template: "%s | Language Coach AI"
     },
-    description: "Premium AI Language Immersion & Real-time Feedback.",
+    description: "Initialize your neural sync. Accelerate language acquisition with deep AI immersion and real-time biometric-grade feedback.",
     icons: {
         icon: '/favicon.png',
     },
     manifest: "/manifest.json",
     metadataBase: new URL(CONFIG.BASE_URL),
-    themeColor: [
-        { media: '(prefers-color-scheme: dark)', color: '#020617' },
-    ],
-    viewport: {
-        width: 'device-width',
-        initialScale: 1,
-        maximumScale: 1,
-        userScalable: false,
-    },
     appleWebApp: {
         capable: true,
         statusBarStyle: 'black-translucent',
         title: 'Coach AI',
     },
     openGraph: {
-        title: "Language Coach AI",
-        description: "Level up your fluency with an AI tutor that talks back. Real-time grammar & accent feedback.",
+        title: "Language Coach AI | Neural Sync Protocol",
+        description: "Bypass the translation lag. Initialize your neural sync and achieve native-level fluency with AI-driven deep immersion.",
         url: CONFIG.BASE_URL,
         siteName: "Language Coach AI",
         images: [

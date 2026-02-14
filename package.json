@@ -1,6 +1,7 @@
 {
-    "name": "language-coach",
+    "name": "@ecosystem/language-coach",
     "version": "0.1.0",
+    "type": "module",
     "private": true,
     "scripts": {
         "dev": "next dev",
@@ -23,7 +24,8 @@
         "react-markdown": "^10.1.0",
         "tailwind-merge": "^2.3.0",
         "zod": "^4.3.6",
-        "zustand": "^5.0.10"
+        "zustand": "^5.0.10",
+        "@ecosystem/shared-ui": "*"
     },
     "devDependencies": {
         "@testing-library/jest-dom": "^6.9.1",

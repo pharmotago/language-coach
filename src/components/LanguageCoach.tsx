@@ -22,13 +22,15 @@ import { MessageSkeleton } from './LoadingSkeletons';
 import { useLanguageCoachShortcuts, KeyboardShortcutsHelp } from '@/hooks/useLanguageCoachShortcuts';
 import { exportConversation } from '@/lib/conversationExport';
 import { shareReferral } from '@/lib/referral';
-import { AdSense } from './AdSense';
 import { SynapseHeader } from './SynapseHeader';
 
 // Phase 2 Integrations
 import { AchievementsList, AchievementUnlockNotification, DEFAULT_ACHIEVEMENTS, Achievement } from './AchievementSystem';
 import { XPBar, LevelUpNotification, XPGainToast, calculateLevel } from './XPSystem';
 import { StreakDisplay, calculateStreak, CalendarHeatmap } from './StreakTracker';
+import { PremiumModal } from './PremiumModal';
+import { AdSense, useLicensing, ExitIntentModal, CrossPromo } from '@ecosystem/shared-ui';
+import { Wind } from 'lucide-react';
 
 import { useConversationHistory } from '@/lib/conversationHistory';
 import { useSound } from '@/contexts/SoundContext';
@@ -69,8 +71,29 @@ export function LanguageCoach() {
         initialize,
         vocabulary: allVocabulary,
         addVocabularyCard,
-        updateVocabularyCard
+        updateVocabularyCard,
+        isPremium,
+        energy,
+        useEnergy,
+        setPremium
     } = useLanguageStore();
+
+    const { isPremium: isSharedPremium, unlockPremium } = useLicensing();
+
+    const [showWorryPromo, setShowWorryPromo] = useState(false);
+
+    useEffect(() => {
+        if (energy === 0 && !isPremium) {
+            setShowWorryPromo(true);
+        }
+    }, [energy, isPremium]);
+
+    // Sync shared premium to local store if needed
+    useEffect(() => {
+        if (isSharedPremium && !isPremium) {
+            setPremium(true);
+        }
+    }, [isSharedPremium, isPremium, setPremium]);
 
     const langCode = targetLanguage?.code || 'global';
     const messages = allMessages[langCode] || [];
@@ -91,6 +114,7 @@ export function LanguageCoach() {
     const [showKeyboardHelp, setShowKeyboardHelp] = useState(false);
     const [showSetup, setShowSetup] = useState(false);
     const [showMistakeVault, setShowMistakeVault] = useState(false);
+    const [showPremiumModal, setShowPremiumModal] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [activeView, setActiveView] = useState<'chat' | 'achievements' | 'analytics' | 'vocabulary' | 'lessons' | 'shop' | 'leaderboard'>('chat');
     const [isStudying, setIsStudying] = useState(false);
@@ -147,11 +171,19 @@ export function LanguageCoach() {
         }
     };
 
+    const checkPremium = (action: () => void) => {
+        if (isPremium) {
+            action();
+        } else {
+            setShowPremiumModal(true);
+        }
+    };
+
     // Keyboard shortcuts
     const shortcuts = useLanguageCoachShortcuts({
         onSend: () => handleSendMessage(),
         onReset: handleReset,
-        onScenarios: () => setShowScenarios(true),
+        onScenarios: () => checkPremium(() => setShowScenarios(true)),
         onFocusInput: () => inputRef.current?.focus(),
         onToggleVoice: () => { /* Implemented in VoiceInput */ }
     });
@@ -300,6 +332,11 @@ export function LanguageCoach() {
             content: inputValue.trim(),
             timestamp: new Date()
         };
+
+        if (!useEnergy()) {
+            setShowPremiumModal(true);
+            return;
+        }
 
         addMessage(userMessage);
         setInputValue('');
@@ -457,6 +494,7 @@ export function LanguageCoach() {
     return (
         <div className="min-h-[100dvh] bg-[#020617] flex flex-col relative overflow-hidden synapse-hud">
             {/* Background Texture & Pulse */}
+            <div className="synapse-scanline animate-scanline" />
             <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.03] pointer-events-none" />
             <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-emerald-500/5 blur-[120px] rounded-full animate-float" />
             <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-emerald-500/5 blur-[120px] rounded-full animate-float" style={{ animationDelay: '2s' }} />
@@ -493,11 +531,17 @@ export function LanguageCoach() {
                 streakData={streakData}
                 level={level}
                 activeView={activeView}
-                setActiveView={setActiveView}
+                setActiveView={(view) => {
+                    if (['analytics', 'lessons', 'leaderboard', 'shop'].includes(view)) {
+                        checkPremium(() => setActiveView(view));
+                    } else {
+                        setActiveView(view);
+                    }
+                }}
                 onAvatarClick={() => setShowAvatarCustomizer(true)}
                 onSetupClick={() => setShowSetup(true)}
                 onExportClick={handleExport}
-                onScenariosClick={() => setShowScenarios(true)}
+                onScenariosClick={() => checkPremium(() => setShowScenarios(true))}
                 onReferralClick={async () => {
                     const result = await shareReferral('user123');
                     if (result.success) {
@@ -551,14 +595,20 @@ export function LanguageCoach() {
                                 {/* Vertical Connection Line */}
                                 <div className="absolute left-6 top-0 bottom-0 w-px bg-emerald-500/10 hidden md:block" />
 
-                                {messages.map((message) => (
-                                    <ChatMessage
+                                {messages.map((message, idx) => (
+                                    <motion.div
                                         key={message.id}
-                                        message={message}
-                                        targetLanguageName={targetLanguage.name}
-                                        languageCode={`${targetLanguage.code}-${targetLanguage.code.toUpperCase()}`}
-                                        onRegenerate={handleRegenerateLastResponse}
-                                    />
+                                        initial={{ opacity: 0, x: message.role === 'coach' ? -20 : 20, filter: 'blur(10px)' }}
+                                        animate={{ opacity: 1, x: 0, filter: 'blur(0px)' }}
+                                        transition={{ duration: 0.5, delay: idx * 0.05, ease: "easeOut" }}
+                                    >
+                                        <ChatMessage
+                                            message={message}
+                                            targetLanguageName={targetLanguage.name}
+                                            languageCode={`${targetLanguage.code}-${targetLanguage.code.toUpperCase()}`}
+                                            onRegenerate={handleRegenerateLastResponse}
+                                        />
+                                    </motion.div>
                                 ))}
                             </div>
 
@@ -717,6 +767,39 @@ export function LanguageCoach() {
                             </div>
                         )}
 
+                        {/* Banner Ad: Chat Footer */}
+                        {!isPremium && (
+                            <AdSense
+                                adSlot="chat-footer"
+                                adFormat="horizontal"
+                                className="my-2 opacity-50 grayscale hover:grayscale-0 transition-all rounded-lg"
+                            />
+                        )}
+
+                        {/* Energy Display */}
+                        {!isPremium && (
+                            <div className="mb-4 flex items-center justify-between px-2">
+                                <div className="flex items-center gap-3">
+                                    <div className="text-[10px] font-black text-emerald-500/60 uppercase tracking-widest">Neural Energy</div>
+                                    <div className="w-48 h-1 bg-emerald-500/10 rounded-full overflow-hidden">
+                                        <div
+                                            className="h-full bg-emerald-500 transition-all duration-500"
+                                            style={{ width: `${(energy / 20) * 100}%` }}
+                                        />
+                                    </div>
+                                    <div className="text-[10px] font-mono text-emerald-500">{energy}/20</div>
+                                </div>
+                                {energy < 5 && (
+                                    <button
+                                        onClick={() => setShowPremiumModal(true)}
+                                        className="text-[10px] font-black text-amber-500 uppercase tracking-widest hover:text-amber-400 transition-colors"
+                                    >
+                                        Refill Energy
+                                    </button>
+                                )}
+                            </div>
+                        )}
+
                         <div className="flex items-end gap-4 relative">
                             <div className="flex-1 relative group">
                                 <div className="absolute -inset-0.5 bg-emerald-500/10 rounded-none blur opacity-0 group-focus-within:opacity-100 transition duration-500" />
@@ -750,8 +833,9 @@ export function LanguageCoach() {
                                 <button
                                     onClick={handleSendMessage}
                                     disabled={!inputValue.trim() || isLoading}
-                                    className="px-8 py-4 bg-emerald-500 text-slate-950 font-black uppercase tracking-[0.2em] text-xs transition-all hover:bg-emerald-400 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-30 disabled:grayscale h-[60px] shadow-[0_0_20px_rgba(16,185,129,0.2)]"
+                                    className="px-8 py-4 bg-emerald-500 text-slate-950 font-black uppercase tracking-[0.2em] text-xs transition-all hover:bg-emerald-400 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-30 disabled:grayscale h-[60px] shadow-[0_0_20px_rgba(16,185,129,0.4)] relative group overflow-hidden"
                                 >
+                                    <div className="absolute inset-0 bg-white/20 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-500 skew-x-12" />
                                     Transmit
                                 </button>
                             </div>
@@ -789,6 +873,35 @@ export function LanguageCoach() {
             {showMistakeVault && (
                 <MistakeVault onClose={() => setShowMistakeVault(false)} />
             )}
+
+            {/* Premium Modal */}
+            <PremiumModal
+                isOpen={showPremiumModal}
+                onClose={() => setShowPremiumModal(false)}
+                onUnlock={() => setPremium(true)}
+            />
+
+            {!isPremium && (
+                <ExitIntentModal
+                    onClose={() => { }}
+                    onClaim={() => { }}
+                    title="WAIT! Language Mastery Awaits"
+                    description="Don't lose your progress. Unlock Lifetime Access now for $29 and skip the energy limits forever."
+                />
+            )}
+
+            {/* Cross-App Promotion */}
+            <CrossPromo
+                id="lc-to-ws"
+                targetAppName="Worry Sorter"
+                hook="Learning fatigue? Decrypt your mental noise and find clarity."
+                cta="Sort My Worry"
+                url="https://frontend-ruddy-five-18.vercel.app"
+                icon={Wind}
+                color="purple"
+                isVisible={showWorryPromo}
+                onClose={() => setShowWorryPromo(false)}
+            />
 
             {/* AI Real-time Feedback */}
             {targetLanguage && <AICoachFeedback messages={messages} targetLanguage={targetLanguage.name} />}

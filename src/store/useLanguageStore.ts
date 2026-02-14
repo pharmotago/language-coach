@@ -21,12 +21,18 @@ interface LanguageStore {
 
     // Global User State
     coins: number;
+    energy: number;
+    lastEnergyRefill: string | null;
+    isPremium: boolean;
     inventory: string[];
     avatarConfig: { skinColor: string; bgColor: string; eyeType: string; mouthType: string };
 
     // Global Actions
     setLanguage: (language: LanguageConfig) => void;
     addCoins: (amount: number) => void;
+    useEnergy: () => boolean;
+    refillEnergy: () => void;
+    setPremium: (status: boolean) => void;
     purchaseItem: (itemId: string, cost: number) => boolean;
     updateAvatarConfig: (config: { skinColor: string; bgColor: string; eyeType: string; mouthType: string }) => void;
     initialize: () => void;
@@ -64,6 +70,9 @@ export const useLanguageStore = create<LanguageStore>()(
 
             // Global State
             coins: 100,
+            energy: 20,
+            lastEnergyRefill: new Date().toISOString(),
+            isPremium: false,
             inventory: [],
             avatarConfig: { skinColor: '#f8d9ce', bgColor: 'bg-slate-700', eyeType: 'normal', mouthType: 'smile' },
 
@@ -188,11 +197,28 @@ export const useLanguageStore = create<LanguageStore>()(
                     vocabulary: {},
                     currentScenarios: {},
                     coins: 100,
+                    energy: 20,
+                    lastEnergyRefill: new Date().toISOString(),
+                    isPremium: false,
                     inventory: [],
                     avatarConfig: { skinColor: '#f8d9ce', bgColor: 'bg-slate-700', eyeType: 'normal', mouthType: 'smile' }
                 }),
 
             addCoins: (amount) => set((state) => ({ coins: state.coins + amount })),
+
+            useEnergy: () => {
+                const state = get();
+                if (state.isPremium) return true;
+                if (state.energy > 0) {
+                    set({ energy: state.energy - 1 });
+                    return true;
+                }
+                return false;
+            },
+
+            refillEnergy: () => set({ energy: 20, lastEnergyRefill: new Date().toISOString() }),
+
+            setPremium: (status) => set({ isPremium: status }),
 
             purchaseItem: (itemId, cost) => {
                 const state = get();
@@ -220,7 +246,11 @@ export const useLanguageStore = create<LanguageStore>()(
                 mistakeLog: state.mistakeLog,
                 vocabulary: state.vocabulary,
                 currentScenarios: state.currentScenarios,
+                currentScenarios: state.currentScenarios,
                 coins: state.coins,
+                energy: state.energy,
+                lastEnergyRefill: state.lastEnergyRefill,
+                isPremium: state.isPremium,
                 inventory: state.inventory,
                 avatarConfig: state.avatarConfig
             })
