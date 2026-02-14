@@ -187,14 +187,13 @@ export class AnthropicAdapter implements AIProvider {
 }
 
 // Google Gemini Adapter (FETCH BASED - bypassing SDK)
-// CRITICAL: As of February 2026, Gemini 1.5 Flash is DEPRECATED and returns 404.
-// Use Gemini 3 Flash Preview or 2.0 variants for stable production availability.
+// Feb 2026 Standard: gemini-2.0-flash
 export class GeminiAdapter implements AIProvider {
     name = 'Google Gemini';
     private apiKey: string;
     private model: string;
 
-    constructor(apiKey: string, model: string = 'gemini-3-flash-preview') {
+    constructor(apiKey: string, model: string = 'gemini-2.0-flash') {
         this.apiKey = apiKey;
         this.model = model;
     }
@@ -306,8 +305,8 @@ export function createAIProvider(
         case 'anthropic':
             return new AnthropicAdapter(apiKey, model || 'claude-3-5-sonnet-20240620');
         case 'gemini':
-            // Feb 2026 Standard: gemini-3-flash-preview
-            return new GeminiAdapter(apiKey, model || 'gemini-3-flash-preview');
+            // Feb 2026 Standard: gemini-2.0-flash
+            return new GeminiAdapter(apiKey, model || 'gemini-2.0-flash');
         default:
             throw new Error(`Unknown provider: ${provider}`);
     }

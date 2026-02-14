@@ -16,6 +16,6 @@ export const CONFIG = {
     BASE_URL: process.env.NEXT_PUBLIC_BASE_URL || 'https://languagecoach.ai',
 
     // Standards (Feb 2026)
-    DEFAULT_GEMINI_MODEL: 'gemini-3-flash-preview',
-    GEMINI_FALLBACKS: ['gemini-2.5-flash-lite', 'gemini-flash-latest']
+    DEFAULT_GEMINI_MODEL: 'gemini-2.0-flash',
+    GEMINI_FALLBACKS: ['gemini-1.5-flash', 'gemini-flash-latest']
 };
