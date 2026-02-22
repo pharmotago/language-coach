@@ -73,20 +73,11 @@ export interface Message {
     timestamp: Date;
     // For coach messages
     translation?: string;
-    feedback?: Feedback;
+    feedback?: string;
     cultureNote?: CultureNote;
 }
 
-export interface Feedback {
-    correction: string | null; // Grammar/syntax fixes
-    polish: string; // Native-sounding alternative
-    wordOfTheDay: {
-        term: string;
-        translation: string;
-        usage: string;
-    };
-    generalTips?: string; // Optional coaching notes
-}
+
 
 export interface Scenario {
     id: string;

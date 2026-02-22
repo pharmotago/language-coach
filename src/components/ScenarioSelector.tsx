@@ -10,6 +10,7 @@ import { Scenario, SkillLevel } from '@/types/languageTypes';
 import { SCENARIOS } from '@/lib/languageData';
 import { cn } from '@/lib/utils';
 import { aiService } from '@/lib/aiCore';
+import { useLanguageStore } from '@/store/useLanguageStore';
 
 interface ScenarioSelectorProps {
     currentLevel: SkillLevel;
@@ -23,11 +24,19 @@ export function ScenarioSelector({ currentLevel, onSelect, onClose }: ScenarioSe
     const [isGenerating, setIsGenerating] = useState(false);
     const [error, setError] = useState('');
 
+    const { dynamicScenarios } = useLanguageStore();
+
     // Filter scenarios appropriate for current level
-    const suitableScenarios = SCENARIOS.filter(scenario => {
-        const levelOrder = { Beginner: 1, Intermediate: 2, Advanced: 3 };
-        return levelOrder[scenario.difficulty] <= levelOrder[currentLevel];
-    });
+    const suitableScenarios = [
+        ...SCENARIOS.filter(scenario => {
+            const levelOrder = { Beginner: 1, Intermediate: 2, Advanced: 3 };
+            return levelOrder[scenario.difficulty] <= levelOrder[currentLevel];
+        }),
+        ...dynamicScenarios.filter(scenario => {
+            const levelOrder = { Beginner: 1, Intermediate: 2, Advanced: 3 };
+            return levelOrder[scenario.difficulty] <= levelOrder[currentLevel];
+        })
+    ];
 
     const handleGenerate = async () => {
         if (!customTopic.trim()) return;

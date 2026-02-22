@@ -1,12 +1,11 @@
 /**
- * Setup Modal - Language and skill level selection
+ * Setup Modal - Clean, Minimal Language and skill level selection
  */
 
 'use client';
 
 import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Globe, TrendingUp, X } from 'lucide-react';
+import { Globe, X } from 'lucide-react';
 import { LanguageConfig, SkillLevel } from '@/types/languageTypes';
 import { SUPPORTED_LANGUAGES } from '@/lib/languageData';
 import { cn } from '@/lib/utils';
@@ -33,131 +32,102 @@ export function SetupModal({ onComplete, onClose, initialLanguage }: SetupModalP
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/90 backdrop-blur-xl">
-            <motion.div
-                initial={{ opacity: 0, scale: 0.9, y: 20 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                className="glass-3d max-w-2xl w-full rounded-[32px] border border-white/10 shadow-2xl relative overflow-hidden"
-            >
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
+            <div className="bg-white max-w-2xl w-full rounded-3xl shadow-2xl relative overflow-hidden border border-slate-200">
                 {/* Header */}
-                <div className="px-10 py-8 border-b border-white/5 bg-white/5">
-                    <div className="flex items-center gap-4 mb-2">
-                        <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center shadow-xl shadow-emerald-500/20">
-                            <Globe className="w-7 h-7 text-white" />
+                <div className="px-8 py-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+                    <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-2xl bg-emerald-100 flex items-center justify-center text-emerald-600">
+                            <Globe className="w-6 h-6" />
                         </div>
                         <div>
-                            <h2 className="text-3xl font-black text-white uppercase tracking-tight">
+                            <h2 className="text-2xl font-bold text-slate-800 tracking-tight">
                                 Neural Coach
                             </h2>
-                            <p className="text-sm text-emerald-400/80 font-bold uppercase tracking-widest">
-                                {step === 'language' ? 'Deployment Sector' : 'Cognitive Level'}
+                            <p className="text-sm text-slate-500 font-medium">
+                                {step === 'language' ? 'Select a language to learn' : 'Choose your proficiency'}
                             </p>
                         </div>
                     </div>
                     {onClose && (
                         <button
                             onClick={onClose}
-                            className="absolute top-8 right-8 w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-white/40 hover:text-white hover:bg-white/10 transition-all"
+                            className="p-2 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
                         >
-                            <X className="w-6 h-6" />
+                            <X className="w-5 h-5" />
                         </button>
                     )}
                 </div>
 
                 {/* Content */}
-                <div className="p-10">
-                    <AnimatePresence mode="wait">
-                        {step === 'language' ? (
-                            <motion.div
-                                key="language"
-                                initial={{ opacity: 0, x: 20 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                exit={{ opacity: 0, x: -20 }}
-                                className="grid grid-cols-2 md:grid-cols-4 gap-4"
-                            >
-                                {SUPPORTED_LANGUAGES.map((lang, idx) => (
-                                    <motion.button
-                                        key={lang.code}
-                                        whileHover={{ scale: 1.05, y: -5 }}
-                                        whileTap={{ scale: 0.95 }}
-                                        onClick={() => handleLanguageSelect(lang)}
-                                        className="glass-premium p-6 rounded-2xl text-center hover:bg-emerald-500/10 transition-all border-white/5 hover:border-emerald-500/50 group"
-                                    >
-                                        <div className="text-5xl mb-3 drop-shadow-2xl">{lang.flag}</div>
-                                        <div className="font-black text-white text-sm mb-1 uppercase tracking-tighter">
+                <div className="p-8">
+                    {step === 'language' ? (
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            {SUPPORTED_LANGUAGES.map((lang) => (
+                                <button
+                                    key={lang.code}
+                                    onClick={() => handleLanguageSelect(lang)}
+                                    className="p-6 rounded-2xl text-center bg-white border border-slate-200 hover:border-emerald-500 hover:shadow-md transition-all group flex flex-col items-center gap-2"
+                                >
+                                    <div className="text-4xl">{lang.flag}</div>
+                                    <div>
+                                        <div className="font-semibold text-slate-800 text-sm">
                                             {lang.name}
                                         </div>
-                                        <div className="text-[10px] text-white/40 font-black uppercase tracking-widest">
+                                        <div className="text-[10px] text-slate-400 font-medium uppercase tracking-wider">
                                             {lang.nativeName}
                                         </div>
-                                    </motion.button>
-                                ))}
-                            </motion.div>
-                        ) : (
-                            <motion.div
-                                key="level"
-                                initial={{ opacity: 0, x: 20 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                exit={{ opacity: 0, x: -20 }}
-                                className="space-y-4"
-                            >
-                                <button
-                                    onClick={() => setStep('language')}
-                                    className="text-xs text-emerald-400/60 hover:text-emerald-400 mb-6 flex items-center gap-2 font-black uppercase tracking-widest transition-colors"
-                                >
-                                    ← Reassign Sector
+                                    </div>
                                 </button>
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="space-y-4">
+                            <button
+                                onClick={() => setStep('language')}
+                                className="text-sm text-emerald-600 hover:text-emerald-700 mb-6 font-medium transition-colors"
+                            >
+                                ← Back to languages
+                            </button>
 
-                                <div className="space-y-4">
-                                    {(['Beginner', 'Intermediate', 'Advanced'] as SkillLevel[]).map((level) => {
-                                        const descriptions = {
-                                            Beginner: 'Fundamental acquisition. Basic synaptic connections.',
-                                            Intermediate: 'Operational fluency. Complex neural pattern matching.',
-                                            Advanced: 'Architectural mastery. Full cognitive immersion.'
-                                        };
+                            <div className="flex flex-col gap-3">
+                                {(['Beginner', 'Intermediate', 'Advanced'] as SkillLevel[]).map((level) => {
+                                    const descriptions = {
+                                        Beginner: 'Start from scratch. Learn basic vocabulary and grammar.',
+                                        Intermediate: 'Hold basic conversations. Improve fluency and vocabulary.',
+                                        Advanced: 'Refine complex structures and near-native colloquialisms.'
+                                    };
 
-                                        return (
-                                            <motion.button
-                                                key={level}
-                                                whileHover={{ x: 10 }}
-                                                whileTap={{ scale: 0.98 }}
-                                                onClick={() => handleLevelSelect(level)}
-                                                className="w-full glass-premium p-6 rounded-2xl text-left hover:bg-emerald-500/10 border-white/5 hover:border-emerald-500/50 transition-all group"
-                                            >
-                                                <div className="flex items-start gap-6">
-                                                    <div className={cn(
-                                                        "w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg",
-                                                        level === 'Beginner' && "bg-emerald-500/20 text-emerald-400 shadow-emerald-500/20",
-                                                        level === 'Intermediate' && "bg-amber-500/20 text-amber-400 shadow-amber-500/20",
-                                                        level === 'Advanced' && "bg-rose-500/20 text-rose-400 shadow-rose-500/20"
-                                                    )}>
-                                                        <TrendingUp className="w-6 h-6" />
-                                                    </div>
-                                                    <div className="flex-1">
-                                                        <h3 className="font-black text-white text-xl uppercase tracking-tight mb-1 group-hover:text-emerald-400 transition-colors">
-                                                            {level}
-                                                        </h3>
-                                                        <p className="text-sm text-white/60 leading-relaxed font-bold">
-                                                            {descriptions[level]}
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                            </motion.button>
-                                        );
-                                    })}
-                                </div>
-                            </motion.div>
-                        )}
-                    </AnimatePresence>
+                                    return (
+                                        <button
+                                            key={level}
+                                            onClick={() => handleLevelSelect(level)}
+                                            className="w-full bg-white p-5 rounded-2xl text-left border border-slate-200 hover:border-emerald-500 hover:shadow-md transition-all group flex items-start gap-4"
+                                        >
+                                            <div className={cn(
+                                                "w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 font-bold text-sm",
+                                                level === 'Beginner' && "bg-emerald-100 text-emerald-700",
+                                                level === 'Intermediate' && "bg-amber-100 text-amber-700",
+                                                level === 'Advanced' && "bg-rose-100 text-rose-700"
+                                            )}>
+                                                {level.charAt(0)}
+                                            </div>
+                                            <div className="flex-1 mt-0.5">
+                                                <h3 className="font-bold text-slate-800 text-lg group-hover:text-emerald-600 transition-colors">
+                                                    {level}
+                                                </h3>
+                                                <p className="text-sm text-slate-500 mt-1">
+                                                    {descriptions[level]}
+                                                </p>
+                                            </div>
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    )}
                 </div>
-
-                {/* Footer */}
-                <div className="px-10 py-6 border-t border-white/5 bg-white/5">
-                    <p className="text-[10px] text-white/40 text-center font-black uppercase tracking-[0.3em]">
-                        Cognitive Immersion Protocol Active
-                    </p>
-                </div>
-            </motion.div>
+            </div>
         </div>
     );
 }

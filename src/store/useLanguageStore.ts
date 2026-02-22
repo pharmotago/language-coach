@@ -1,11 +1,12 @@
 /**
  * Zustand State Management for Language Immersion Coach
+ * Cleaned up version without gamification overhead.
  */
 
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { Message, LanguageConfig, SkillLevel, Scenario, Mistake } from '@/types/languageTypes';
-import { VocabularyCard, calculateNextReview } from '@/components/VocabularyFlashcards';
+import { supabase } from '@/lib/supabase';
 
 interface LanguageStore {
     // Current Context
@@ -16,25 +17,12 @@ interface LanguageStore {
     skillLevels: Record<string, SkillLevel>;
     messages: Record<string, Message[]>;
     mistakeLog: Record<string, Mistake[]>;
-    vocabulary: Record<string, VocabularyCard[]>;
     currentScenarios: Record<string, Scenario | null>;
-
-    // Global User State
-    coins: number;
-    energy: number;
-    lastEnergyRefill: string | null;
-    isPremium: boolean;
-    inventory: string[];
-    avatarConfig: { skinColor: string; bgColor: string; eyeType: string; mouthType: string };
+    dynamicScenarios: Scenario[];
 
     // Global Actions
     setLanguage: (language: LanguageConfig) => void;
-    addCoins: (amount: number) => void;
-    useEnergy: () => boolean;
-    refillEnergy: () => void;
-    setPremium: (status: boolean) => void;
-    purchaseItem: (itemId: string, cost: number) => boolean;
-    updateAvatarConfig: (config: { skinColor: string; bgColor: string; eyeType: string; mouthType: string }) => void;
+    fetchDynamicContent: () => Promise<void>;
     initialize: () => void;
     resetAll: () => void;
 
@@ -45,10 +33,6 @@ interface LanguageStore {
     addMistake: (mistake: Mistake) => void;
     clearMistakes: () => void;
     clearMessages: () => void;
-
-    // Vocabulary Actions
-    addVocabularyCard: (card: Omit<VocabularyCard, 'id' | 'dateAdded' | 'easinessFactor' | 'interval' | 'repetitions' | 'nextReviewDate' | 'masteryLevel' | 'reviewCount'>) => void;
-    updateVocabularyCard: (cardId: string, quality: number) => void;
 
     // Internal Helpers
     _getLang: () => string;
@@ -65,16 +49,8 @@ export const useLanguageStore = create<LanguageStore>()(
             skillLevels: {},
             messages: {},
             mistakeLog: {},
-            vocabulary: {},
             currentScenarios: {},
-
-            // Global State
-            coins: 100,
-            energy: 20,
-            lastEnergyRefill: new Date().toISOString(),
-            isPremium: false,
-            inventory: [],
-            avatarConfig: { skinColor: '#f8d9ce', bgColor: 'bg-slate-700', eyeType: 'normal', mouthType: 'smile' },
+            dynamicScenarios: [],
 
             // Switch language context (non-destructive)
             setLanguage: (language) => set({ targetLanguage: language }),
@@ -120,62 +96,10 @@ export const useLanguageStore = create<LanguageStore>()(
                 }));
             },
 
-            addVocabularyCard: (cardData) => {
-                const lang = get().targetLanguage?.code;
-                if (!lang) return;
-
-                set((state) => {
-                    const deck = state.vocabulary[lang] || [];
-                    // Avoid duplicates
-                    if (deck.find(c => c.term.toLowerCase() === cardData.term.toLowerCase())) return state;
-
-                    const newCard: VocabularyCard = {
-                        ...cardData,
-                        id: Math.random().toString(36).substring(7),
-                        dateAdded: new Date(),
-                        easinessFactor: 2.5,
-                        interval: 0,
-                        repetitions: 0,
-                        nextReviewDate: new Date(),
-                        masteryLevel: 'new',
-                        reviewCount: 0
-                    };
-
-                    return {
-                        vocabulary: {
-                            ...state.vocabulary,
-                            [lang]: [newCard, ...deck]
-                        }
-                    };
-                });
-            },
-
-            updateVocabularyCard: (cardId, quality) => {
-                const lang = get().targetLanguage?.code;
-                if (!lang) return;
-
-                set((state) => {
-                    const deck = state.vocabulary[lang] || [];
-                    const updatedDeck = deck.map(card => {
-                        if (card.id === cardId) {
-                            return calculateNextReview(card, quality);
-                        }
-                        return card;
-                    });
-
-                    return {
-                        vocabulary: {
-                            ...state.vocabulary,
-                            [lang]: updatedDeck
-                        }
-                    };
-                });
-            },
-
             clearMistakes: () => {
-                const langCode = get()._getLang(); // Use the helper function
+                const langCode = get()._getLang();
                 set((state) => ({
-                    mistakeLog: { ...state.mistakeLog, [langCode]: [] } // Target mistakeLog
+                    mistakeLog: { ...state.mistakeLog, [langCode]: [] }
                 }));
             },
 
@@ -194,46 +118,38 @@ export const useLanguageStore = create<LanguageStore>()(
                     skillLevels: {},
                     messages: {},
                     mistakeLog: {},
-                    vocabulary: {},
-                    currentScenarios: {},
-                    coins: 100,
-                    energy: 20,
-                    lastEnergyRefill: new Date().toISOString(),
-                    isPremium: false,
-                    inventory: [],
-                    avatarConfig: { skinColor: '#f8d9ce', bgColor: 'bg-slate-700', eyeType: 'normal', mouthType: 'smile' }
+                    currentScenarios: {}
                 }),
 
-            addCoins: (amount) => set((state) => ({ coins: state.coins + amount })),
+            fetchDynamicContent: async () => {
+                try {
+                    const { data, error } = await supabase
+                        .from('lc_dynamic_content')
+                        .select('*')
+                        .eq('content_type', 'scenario');
 
-            useEnergy: () => {
-                const state = get();
-                if (state.isPremium) return true;
-                if (state.energy > 0) {
-                    set({ energy: state.energy - 1 });
-                    return true;
+                    if (error) throw error;
+
+                    if (data && data.length > 0) {
+                        const mapped: Scenario[] = data.map((item: any) => ({
+                            id: `dynamic-${item.id}`,
+                            title: item.title,
+                            description: item.data.description || '',
+                            context: item.data.context || '',
+                            difficulty: item.data.difficulty || 'Intermediate',
+                            icon: item.data.icon || 'Sparkles'
+                        }));
+                        set({ dynamicScenarios: mapped });
+                    }
+                } catch (err) {
+                    console.error('Failed to fetch dynamic scenarios:', err);
                 }
-                return false;
             },
 
-            refillEnergy: () => set({ energy: 20, lastEnergyRefill: new Date().toISOString() }),
-
-            setPremium: (status) => set({ isPremium: status }),
-
-            purchaseItem: (itemId, cost) => {
-                const state = get();
-                if (state.coins >= cost && !state.inventory.includes(itemId)) {
-                    set({
-                        coins: state.coins - cost,
-                        inventory: [...state.inventory, itemId]
-                    });
-                    return true;
-                }
-                return false;
-            },
-
-            updateAvatarConfig: (config) => set({ avatarConfig: config }),
-            initialize: () => set({ isInitialized: true })
+            initialize: () => {
+                get().fetchDynamicContent();
+                set({ isInitialized: true });
+            }
         }),
         {
             name: 'language-coach-storage',
@@ -244,15 +160,7 @@ export const useLanguageStore = create<LanguageStore>()(
                 skillLevels: state.skillLevels,
                 messages: state.messages,
                 mistakeLog: state.mistakeLog,
-                vocabulary: state.vocabulary,
-                currentScenarios: state.currentScenarios,
-                currentScenarios: state.currentScenarios,
-                coins: state.coins,
-                energy: state.energy,
-                lastEnergyRefill: state.lastEnergyRefill,
-                isPremium: state.isPremium,
-                inventory: state.inventory,
-                avatarConfig: state.avatarConfig
+                currentScenarios: state.currentScenarios
             })
         }
     )
