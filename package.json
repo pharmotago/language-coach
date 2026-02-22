@@ -13,7 +13,6 @@
         "evolve:daemon": "node scripts/evolve.js --daemon"
     },
     "dependencies": {
-        "@ecosystem/shared-ui": "*",
         "@tailwindcss/typography": "^0.5.19",
         "canvas-confetti": "^1.9.3",
         "clsx": "^2.1.0",
