@@ -25,7 +25,7 @@ export const metadata: Metadata = {
         icon: '/favicon.png',
     },
     manifest: "/manifest.json",
-    metadataBase: new URL(process.env.NEXT_PUBLIC_BASE_URL || 'https://language-coach-app.vercel.app'),
+    metadataBase: new URL(process.env.NEXT_PUBLIC_BASE_URL || 'https://language-coach.mcjp.io'),
     appleWebApp: {
         capable: true,
         statusBarStyle: 'black-translucent',
@@ -34,7 +34,7 @@ export const metadata: Metadata = {
     openGraph: {
         title: "Language Coach AI",
         description: "Master any language with AI-powered conversation practice.",
-        url: process.env.NEXT_PUBLIC_BASE_URL || 'https://language-coach-app.vercel.app',
+        url: process.env.NEXT_PUBLIC_BASE_URL || 'https://language-coach.mcjp.io',
         siteName: "Language Coach AI",
         locale: "en_US",
         type: "website",
