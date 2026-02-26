@@ -1,12 +1,11 @@
 /**
  * Zustand State Management for Language Immersion Coach
- * Cleaned up version without gamification overhead.
+ * Lightweight version — no gamification, no Supabase dependency.
  */
 
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { Message, LanguageConfig, SkillLevel, Scenario, Mistake } from '@/types/languageTypes';
-import { supabase } from '@/lib/supabase';
 
 interface LanguageStore {
     // Current Context
@@ -18,11 +17,9 @@ interface LanguageStore {
     messages: Record<string, Message[]>;
     mistakeLog: Record<string, Mistake[]>;
     currentScenarios: Record<string, Scenario | null>;
-    dynamicScenarios: Scenario[];
 
     // Global Actions
     setLanguage: (language: LanguageConfig) => void;
-    fetchDynamicContent: () => Promise<void>;
     initialize: () => void;
     resetAll: () => void;
 
@@ -50,7 +47,6 @@ export const useLanguageStore = create<LanguageStore>()(
             messages: {},
             mistakeLog: {},
             currentScenarios: {},
-            dynamicScenarios: [],
 
             // Switch language context (non-destructive)
             setLanguage: (language) => set({ targetLanguage: language }),
@@ -121,39 +117,12 @@ export const useLanguageStore = create<LanguageStore>()(
                     currentScenarios: {}
                 }),
 
-            fetchDynamicContent: async () => {
-                try {
-                    const { data, error } = await supabase
-                        .from('lc_dynamic_content')
-                        .select('*')
-                        .eq('content_type', 'scenario');
-
-                    if (error) throw error;
-
-                    if (data && data.length > 0) {
-                        const mapped: Scenario[] = data.map((item: any) => ({
-                            id: `dynamic-${item.id}`,
-                            title: item.title,
-                            description: item.data.description || '',
-                            context: item.data.context || '',
-                            difficulty: item.data.difficulty || 'Intermediate',
-                            icon: item.data.icon || 'Sparkles'
-                        }));
-                        set({ dynamicScenarios: mapped });
-                    }
-                } catch (err) {
-                    console.error('Failed to fetch dynamic scenarios:', err);
-                }
-            },
-
             initialize: () => {
-                get().fetchDynamicContent();
                 set({ isInitialized: true });
             }
         }),
         {
             name: 'language-coach-storage',
-            // Only persist settings, not messages
             partialize: (state) => ({
                 targetLanguage: state.targetLanguage,
                 isInitialized: state.isInitialized,

@@ -1,123 +1,131 @@
 /**
- * Voice Input Component - Speech-to-Text for language practice
+ * Voice Input Component - Speech-to-Text using Web Speech API
  */
 
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Mic, MicOff, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface VoiceInputProps {
-    language: string; // Language code (e.g., 'es-ES', 'fr-FR')
-    onTranscript: (text: string) => void;
+    onTranscription: (text: string) => void;
+    langCode: string;
     disabled?: boolean;
+    className?: string;
 }
 
-export function VoiceInput({ language, onTranscript, disabled = false }: VoiceInputProps) {
+export function VoiceInput({ onTranscription, langCode, disabled, className }: VoiceInputProps) {
     const [isListening, setIsListening] = useState(false);
-    const [isSupported, setIsSupported] = useState(true);
-    const [transcript, setTranscript] = useState('');
+    const [interimTranscript, setInterimTranscript] = useState('');
     const recognitionRef = useRef<any>(null);
 
     useEffect(() => {
-        // Check if Speech Recognition is supported
-        const SpeechRecognition =
-            (window as any).SpeechRecognition ||
-            (window as any).webkitSpeechRecognition;
+        // Initialize Web Speech API
+        const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
 
-        if (!SpeechRecognition) {
-            setIsSupported(false);
-            return;
-        }
+        if (SpeechRecognition) {
+            const recognition = new SpeechRecognition();
+            recognition.continuous = true;
+            recognition.interimResults = true;
+            recognition.lang = langCode;
 
-        // Initialize speech recognition
-        const recognition = new SpeechRecognition();
-        recognition.continuous = false;
-        recognition.interimResults = true;
-        recognition.lang = language;
+            recognition.onresult = (event: any) => {
+                let finalTranscript = '';
+                let currentInterim = '';
 
-        recognition.onresult = (event: any) => {
-            const current = event.resultIndex;
-            const transcriptText = event.results[current][0].transcript;
-            setTranscript(transcriptText);
+                for (let i = event.resultIndex; i < event.results.length; ++i) {
+                    if (event.results[i].isFinal) {
+                        finalTranscript += event.results[i][0].transcript;
+                    } else {
+                        currentInterim += event.results[i][0].transcript;
+                    }
+                }
 
-            // If final result, send to parent
-            if (event.results[current].isFinal) {
-                onTranscript(transcriptText);
-                setTranscript('');
+                if (finalTranscript) {
+                    onTranscription(finalTranscript);
+                }
+                setInterimTranscript(currentInterim);
+            };
+
+            recognition.onerror = (event: any) => {
+                console.error('Speech recognition error', event.error);
                 setIsListening(false);
-            }
-        };
+            };
 
-        recognition.onerror = (event: any) => {
-            console.error('Speech recognition error:', event.error);
-            setIsListening(false);
-        };
+            recognition.onend = () => {
+                setIsListening(false);
+                setInterimTranscript('');
+            };
 
-        recognition.onend = () => {
-            setIsListening(false);
-        };
-
-        recognitionRef.current = recognition;
+            recognitionRef.current = recognition;
+        }
 
         return () => {
             if (recognitionRef.current) {
                 recognitionRef.current.stop();
             }
         };
-    }, [language, onTranscript]);
+    }, [langCode, onTranscription]);
 
-    const toggleListening = () => {
-        if (!recognitionRef.current) return;
+    const toggleListening = useCallback(() => {
+        if (!recognitionRef.current) {
+            alert('Speech Recognition is not supported in this browser.');
+            return;
+        }
 
         if (isListening) {
             recognitionRef.current.stop();
-            setIsListening(false);
         } else {
-            recognitionRef.current.start();
-            setIsListening(true);
+            setInterimTranscript('');
+            try {
+                recognitionRef.current.start();
+                setIsListening(true);
+            } catch (err) {
+                console.error('Failed to start recognition', err);
+                setIsListening(false);
+            }
         }
-    };
+    }, [isListening]);
 
-    if (!isSupported) {
-        return null; // Gracefully degrade if not supported
+    if (!(window as any).SpeechRecognition && !(window as any).webkitSpeechRecognition) {
+        return null;
     }
 
     return (
-        <div className="relative">
+        <div className={cn("relative flex items-center", className)}>
+            <AnimatePresence>
+                {isListening && interimTranscript && (
+                    <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 10 }}
+                        className="absolute bottom-full mb-4 left-0 right-0 p-3 bg-white/90 backdrop-blur-sm border border-emerald-100 rounded-xl shadow-ambient text-xs text-slate-500 italic max-w-xs"
+                    >
+                        {interimTranscript}...
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
             <button
                 onClick={toggleListening}
                 disabled={disabled}
                 className={cn(
-                    "p-3 rounded-full transition-all duration-300",
+                    "w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300",
                     isListening
-                        ? "bg-red-500 text-white animate-pulse shadow-lg shadow-red-500/50"
-                        : "bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-slate-300",
-                    disabled && "opacity-50 cursor-not-allowed"
+                        ? "bg-emerald-500 text-white shadow-emerald-200 shadow-lg animate-pulse"
+                        : "bg-slate-50 text-slate-400 hover:bg-slate-100 hover:text-slate-600 border border-slate-200/50"
                 )}
-                aria-label={isListening ? "Stop recording" : "Start recording"}
+                title={isListening ? "Stop Listening" : "Start Voice Input"}
+                type="button"
             >
                 {isListening ? (
-                    <MicOff className="w-5 h-5" />
+                    <Mic className="w-5 h-5" />
                 ) : (
                     <Mic className="w-5 h-5" />
                 )}
             </button>
-
-            {/* Live Transcript Display */}
-            {transcript && (
-                <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 w-max max-w-xs">
-                    <div className="bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 shadow-xl">
-                        <div className="flex items-center gap-2">
-                            <Loader2 className="w-3 h-3 text-amber-400 animate-spin" />
-                            <p className="text-xs text-slate-300">
-                                {transcript}
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            )}
         </div>
     );
 }

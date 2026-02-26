@@ -16,39 +16,42 @@ interface AppHeaderProps {
 
 export function AppHeader({ targetLanguage, onSetupClick, onResetClick }: AppHeaderProps) {
     return (
-        <header className="fixed top-0 left-0 right-0 h-16 bg-white border-b border-slate-200 shadow-sm z-30 flex items-center px-4 justify-between">
-            <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600">
-                    <Globe className="w-6 h-6" />
+        <header className="fixed top-0 left-0 right-0 h-14 bg-white/80 backdrop-blur-md border-b border-slate-200/60 z-30 flex items-center px-6 justify-between">
+            <div className="flex items-center gap-4">
+                <div className="flex items-center justify-center text-emerald-600">
+                    <Globe className="w-5 h-5 stroke-[1.5]" />
                 </div>
-                <div>
-                    <h1 className="font-semibold text-slate-800 text-lg leading-tight">Neural Coach</h1>
-                    <p className="text-xs text-slate-500 flex items-center gap-1 font-medium">
-                        {targetLanguage ? (
-                            <>
-                                <span>{targetLanguage.name}</span>
-                                <span>{targetLanguage.flag}</span>
-                            </>
-                        ) : (
-                            'Not configured'
-                        )}
-                    </p>
+                <div className="flex flex-col">
+                    <h1 className="font-bold text-slate-900 text-sm tracking-tight leading-none uppercase tracking-widest">
+                        Neural Coach
+                    </h1>
+                    {targetLanguage && (
+                        <div className="flex items-center gap-1.5 mt-1">
+                            <span className="text-[10px] font-mono font-bold text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded leading-none">
+                                {targetLanguage.name.toUpperCase()}
+                            </span>
+                            <span className="text-xs grayscale opacity-70">{targetLanguage.flag}</span>
+                        </div>
+                    )}
                 </div>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1">
                 <button
                     onClick={onSetupClick}
-                    className="p-2 rounded-xl text-slate-500 hover:bg-slate-100 transition-colors"
+                    className="p-2 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-50 transition-all outline-none"
+                    title="Change Language Settings"
+                    aria-label="Settings"
                 >
-                    <Settings className="w-5 h-5" />
+                    <Settings className="w-4 h-4 stroke-[2]" />
                 </button>
                 <button
                     onClick={onResetClick}
-                    className="p-2 rounded-xl text-rose-500 hover:bg-rose-50 transition-colors"
-                    title="Reset Everything"
+                    className="p-2 rounded-lg text-slate-400 hover:text-rose-500 hover:bg-rose-50 transition-all outline-none"
+                    title="Reset Conversation"
+                    aria-label="Reset"
                 >
-                    <RotateCcw className="w-5 h-5" />
+                    <RotateCcw className="w-4 h-4 stroke-[2]" />
                 </button>
             </div>
         </header>

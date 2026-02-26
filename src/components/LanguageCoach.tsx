@@ -13,116 +13,95 @@ import { ChatMessage } from './ChatMessage';
 import { AppHeader } from './AppHeader';
 import { useConversationHistory } from '@/lib/conversationHistory';
 import { Send, Loader2 } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { VoiceInput } from './VoiceInput';
+import { useSpeech } from '@/hooks/useSpeech';
 
 export function LanguageCoach() {
     const {
         targetLanguage,
         skillLevels,
-        messages: allMessages,
         isInitialized,
+        messages: allMessages,
+        addMessage,
         setLanguage,
         setSkillLevel,
-        addMessage,
-        currentScenarios,
-        initialize,
-        resetAll,
+        clearMessages
     } = useLanguageStore();
 
     const langCode = targetLanguage?.code || 'global';
-    const messages = allMessages[langCode] || [];
-    const skillLevel = skillLevels[langCode];
-    const currentScenario = currentScenarios[langCode];
+    const messages = React.useMemo(() => (allMessages && allMessages[langCode]) || [], [allMessages, langCode]);
+    const skillLevel = skillLevels?.[langCode];
 
     // UI State
     const [inputValue, setInputValue] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [showSetup, setShowSetup] = useState(false);
-    const [error, setError] = useState<string | null>(null);
 
     // Persistence Hook
     const { saveConversation } = useConversationHistory();
 
-    const messagesEndRef = useRef<HTMLDivElement>(null);
-    const inputRef = useRef<HTMLTextAreaElement>(null);
-    const abortControllerRef = useRef<AbortController | null>(null);
+    // Speech Hook
+    const { speak, stop, isSpeaking: isTtsSpeaking } = useSpeech();
 
-    // Auto-scroll to bottom
-    useEffect(() => {
+    // Auto-scroll logic
+    const messagesEndRef = useRef<HTMLDivElement>(null);
+    const scrollToEnd = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    useEffect(() => {
+        scrollToEnd();
     }, [messages]);
 
-    // Send initial greeting when setup is complete
-    useEffect(() => {
-        if (isInitialized && targetLanguage && skillLevel && messages.length === 0) {
-            handleInitialGreeting();
-        }
-    }, [isInitialized, targetLanguage, skillLevel]);
-
-    const handleInitialGreeting = async () => {
+    const handleInitialGreeting = useCallback(async () => {
         if (!targetLanguage || !skillLevel) return;
 
         setIsLoading(true);
-        setError(null);
-
         try {
-            const prompt = `
-            Act as a native ${targetLanguage.name} language tutor. 
-            User Skill Level: ${skillLevel}.
-            
-            Task: Generate a warm, welcoming initial greeting for a new student.
-            
-            Instructions:
-            1. Speak ONLY in ${targetLanguage.name} (with English translation in parentheses).
-            2. Match the difficulty to the user's skill level.
-            3. Ask a simple open-ended question to start the conversation.
-            
-            Output strictly valid JSON:
-            {
-                "response": "Greeting in ${targetLanguage.name}",
-                "translation": "English translation"
-            }
-            `;
+            const promptText = `Hello coach! I am a ${skillLevel} level student starting a lesson in ${targetLanguage.name}. Give me a short, encouraging greeting in ${targetLanguage.name} to start our conversation.`;
 
-            const aiResponse = await aiService.generateResponse({
+            const response = await aiService.generateResponse({
                 messages: [],
-                systemPrompt: prompt,
+                systemPrompt: promptText,
                 targetLanguage: targetLanguage.name,
                 skillLevel: skillLevel
             });
 
-            const aiData = {
-                response: aiResponse.response,
-                translation: aiResponse.translation
-            };
-
-            const coachMessage: Message = {
-                id: Date.now().toString(),
-                role: 'coach',
-                content: aiData.response,
-                timestamp: new Date(),
-                translation: aiData.translation,
-            };
-
-            addMessage(coachMessage);
-        } catch (err: any) {
-            console.error("AI Greeting Error:", err);
             addMessage({
                 id: Date.now().toString(),
                 role: 'coach',
-                content: "Hello! Let's start learning!",
+                content: response.response,
+                translation: response.translation,
+                feedback: response.feedback ? String(response.feedback) : undefined,
                 timestamp: new Date()
             });
+
+            // Speak greeting
+            speak(response.response, targetLanguage.code);
+        } catch (err) {
+            console.error("Initial Greeting Error:", err);
         } finally {
             setIsLoading(false);
         }
-    };
+    }, [targetLanguage, skillLevel, addMessage, speak]);
 
-    const handleSendMessage = useCallback(async () => {
-        if (!inputValue.trim() || !targetLanguage || !skillLevel || isLoading) return;
-
-        if (abortControllerRef.current) {
-            abortControllerRef.current.abort();
+    useEffect(() => {
+        if (isInitialized && targetLanguage && skillLevel && messages.length === 0) {
+            handleInitialGreeting();
         }
+    }, [isInitialized, targetLanguage, skillLevel, messages.length, handleInitialGreeting]);
+
+    // Focus input on load
+    const inputRef = useRef<HTMLTextAreaElement>(null);
+    useEffect(() => {
+        if (isInitialized && !showSetup) {
+            inputRef.current?.focus();
+        }
+    }, [isInitialized, showSetup]);
+
+    const handleSendMessage = async () => {
+        if (!inputValue.trim() || !targetLanguage || !skillLevel || isLoading) return;
 
         const userMessage: Message = {
             id: Date.now().toString(),
@@ -134,122 +113,116 @@ export function LanguageCoach() {
         addMessage(userMessage);
         setInputValue('');
         setIsLoading(true);
-        setError(null);
-
-        abortControllerRef.current = new AbortController();
 
         try {
-            // Very strict prompt to save tokens
-            const prompt = `
-            Act as a native ${targetLanguage.name} language tutor. 
-            User Skill Level: ${skillLevel}.
-            Current Context: ${currentScenario ? currentScenario.context : 'Casual conversation'}.
-            
-            User Message: "${userMessage.content}"
-            
-            Instructions:
-            1. Respond naturally and concisely in ${targetLanguage.name}. DO NOT ramble.
-            2. Provide correction of ONLY severe mistakes in the user's message.
-            
-            Output strictly valid JSON format ONLY:
-            {
-                "response": "Your concise response in ${targetLanguage.name}",
-                "translation": "English translation of your response",
-                "feedback": "Correction if needed (optional, keep very short)"
-            }
-            `;
+            // Context for AI
+            const contextMessages = messages.slice(-10).map(m => ({
+                id: m.id,
+                role: m.role,
+                content: m.content,
+                timestamp: m.timestamp
+            }));
 
-            const aiResponse = await aiService.generateResponse({
-                messages: messages,
-                systemPrompt: prompt,
+            const promptText = `Continue our conversation. Respond naturally to the student. Try to keep the conversation flowing. 
+            Level: ${skillLevel} in ${targetLanguage.name}.`;
+
+            const response = await aiService.generateResponse({
+                messages: contextMessages,
+                systemPrompt: promptText,
                 targetLanguage: targetLanguage.name,
                 skillLevel: skillLevel
             });
 
-            const coachMessage: Message = {
+            const aiMessage: Message = {
                 id: (Date.now() + 1).toString(),
                 role: 'coach',
-                content: aiResponse.response,
-                timestamp: new Date(),
-                translation: aiResponse.translation,
-                feedback: aiResponse.feedback || undefined,
+                content: response.response,
+                translation: response.translation,
+                feedback: response.feedback ? String(response.feedback) : undefined,
+                timestamp: new Date()
             };
 
-            addMessage(coachMessage);
+            addMessage(aiMessage);
 
-            // Persistence
-            saveConversation({
-                id: Date.now().toString(),
+            // Speak AI response
+            speak(aiMessage.content, targetLanguage.code);
+
+            // Save to history after AI reply
+            saveConversation(langCode, {
+                id: langCode,
                 language: targetLanguage.name,
-                skillLevel,
-                messages: [...messages, userMessage, coachMessage],
+                skillLevel: skillLevel,
+                messages: [...messages, userMessage, aiMessage],
                 createdAt: new Date(),
                 updatedAt: new Date(),
-                title: `Conversation - ${new Date().toLocaleDateString()}`
+                title: `Conversation in ${targetLanguage.name}`
             });
 
         } catch (err: any) {
             console.error("AI Error Details:", err);
             if (err.name !== 'AbortError') {
-                setError('Failed to connect to AI Tutor. Please try again.');
                 console.error(err);
                 addMessage({
                     id: Date.now().toString(),
                     role: 'coach',
-                    content: "I'm having trouble responding right now. Please try again.",
+                    content: "I'm having trouble connecting right now. Let's try again in a moment.",
                     timestamp: new Date()
                 });
             }
         } finally {
             setIsLoading(false);
-            abortControllerRef.current = null;
         }
-    }, [inputValue, targetLanguage, skillLevel, isLoading, messages, currentScenario, addMessage, saveConversation]);
+    };
 
     const handleKeyPress = (e: React.KeyboardEvent) => {
-        if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault();
+        if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
             handleSendMessage();
         }
     };
 
+    const handleSetupComplete = (language: any, level: any) => {
+        setLanguage(language);
+        setSkillLevel(level);
+        setShowSetup(false);
+    };
+
     const handleReset = () => {
-        if (confirm('Are you sure you want to reset everything?')) {
-            resetAll();
+        if (confirm('Clear entire conversation history?')) {
+            clearMessages();
         }
     };
 
-    // Show setup modal if not initialized or manually requested
-    if ((!isInitialized || !targetLanguage || !skillLevel) || showSetup) {
+    if (!isInitialized || showSetup) {
         return (
             <SetupModal
-                onComplete={(lang, level) => {
-                    setLanguage(lang);
-                    setSkillLevel(level);
-                    initialize();
-                    setShowSetup(false);
-                }}
-                onClose={isInitialized ? () => setShowSetup(false) : undefined}
+                onComplete={handleSetupComplete}
                 initialLanguage={targetLanguage}
+                onClose={isInitialized ? () => setShowSetup(false) : undefined}
             />
         );
     }
 
+    if (!targetLanguage) return null;
+
     return (
-        <div className="flex flex-col h-screen bg-slate-50 text-slate-900 font-sans">
+        <div className="flex flex-col min-h-screen bg-slate-50 font-sans text-slate-900 selection:bg-emerald-100 selection:text-emerald-900">
             <AppHeader
                 targetLanguage={targetLanguage}
                 onSetupClick={() => setShowSetup(true)}
                 onResetClick={handleReset}
             />
 
-            <main className="flex-1 overflow-y-auto w-full max-w-3xl mx-auto px-4 py-8 flex flex-col pt-24">
-                <div className="space-y-6">
+            <main className="flex-1 overflow-y-auto w-full max-w-2xl mx-auto px-6 py-8 flex flex-col pt-20">
+                <div className="space-y-4">
                     {messages.length === 0 && !isLoading && (
-                        <div className="text-center text-slate-500 my-10 border border-slate-200 p-8 rounded-2xl bg-white shadow-sm">
-                            <h3 className="text-xl font-semibold mb-2 text-slate-800">Ready to practice {targetLanguage.name}?</h3>
-                            <p>Say hello to your tutor to begin.</p>
-                        </div>
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            className="text-center text-slate-500 my-16 border border-slate-100 p-10 rounded-3xl bg-white shadow-ambient"
+                        >
+                            <h3 className="text-xl font-bold mb-2 text-slate-900 tracking-tight">Practice {targetLanguage.name}</h3>
+                            <p className="text-sm font-medium text-slate-400">Your AI tutor is ready. Start by saying hello.</p>
+                        </motion.div>
                     )}
 
                     {messages.map((message) => (
@@ -257,42 +230,64 @@ export function LanguageCoach() {
                             key={message.id}
                             message={message}
                             targetLanguageName={targetLanguage.name}
+                            onSpeak={() => speak(message.content, targetLanguage.code)}
+                            isSpeaking={isTtsSpeaking}
                         />
                     ))}
 
                     {isLoading && (
-                        <div className="flex items-center gap-2 text-slate-400 p-4">
-                            <Loader2 className="w-5 h-5 animate-spin" />
-                            <span className="text-sm">Tutor is typing...</span>
-                        </div>
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            className="flex items-center gap-3 text-slate-400 p-4"
+                        >
+                            <div className="flex gap-1">
+                                <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-bounce [animation-delay:-0.3s]"></span>
+                                <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-bounce [animation-delay:-0.15s]"></span>
+                                <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-bounce"></span>
+                            </div>
+                            <span className="text-[11px] font-bold font-mono tracking-widest uppercase">Syncing...</span>
+                        </motion.div>
                     )}
                     <div ref={messagesEndRef} />
                 </div>
             </main>
 
-            <footer className="w-full max-w-3xl mx-auto p-4 bg-slate-50/90 backdrop-blur-sm sticky bottom-0">
-                <div className="relative flex shadow-xl shadow-slate-200/50 rounded-2xl">
+            <footer className="w-full max-w-2xl mx-auto p-6 bg-transparent sticky bottom-0 z-20">
+                <motion.div
+                    initial={{ y: 20, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    className="relative flex shadow-premium rounded-2xl bg-white border border-slate-200/50 group focus-within:shadow-focused transition-all duration-300"
+                >
+                    <div className="flex items-center pl-2">
+                        <VoiceInput
+                            onTranscription={(text) => setInputValue(prev => (prev.trim() + ' ' + text).trim())}
+                            langCode={targetLanguage.code}
+                            disabled={isLoading}
+                        />
+                    </div>
                     <textarea
                         ref={inputRef}
                         value={inputValue}
                         onChange={(e) => setInputValue(e.target.value)}
                         onKeyDown={handleKeyPress}
-                        placeholder={isLoading ? "Waiting for response..." : "Type your message in " + targetLanguage.name + " (or English)..."}
-                        className="w-full bg-white border border-slate-200 rounded-2xl py-4 pl-4 pr-14 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 resize-none h-14 shadow-sm"
+                        placeholder={isLoading ? "Syncing response..." : "Type in " + targetLanguage.name + "..."}
+                        className="w-full bg-transparent rounded-2xl py-4 pl-3 pr-14 focus:outline-none resize-none h-14 text-sm font-medium text-slate-800 placeholder:text-slate-300 transition-all font-sans"
                         disabled={isLoading}
                         rows={1}
-                        style={{ minHeight: '56px', maxHeight: '120px' }}
+                        style={{ minHeight: '56px', maxHeight: '160px' }}
                     />
                     <button
                         onClick={handleSendMessage}
                         disabled={!inputValue.trim() || isLoading}
-                        className="absolute right-2 top-2 bottom-2 aspect-square rounded-xl bg-emerald-500 text-white flex items-center justify-center hover:bg-emerald-600 disabled:opacity-50 transition-colors shadow-md"
+                        className="absolute right-2.5 top-2.5 bottom-2.5 aspect-square rounded-xl bg-slate-900 text-white flex items-center justify-center hover:bg-slate-800 disabled:opacity-20 transition-all duration-200"
+                        title="Send Message"
                     >
-                        {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
+                        {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
                     </button>
-                </div>
-                <div className="text-center mt-2">
-                    <span className="text-xs text-slate-400">Press Enter to send</span>
+                </motion.div>
+                <div className="text-center mt-3">
+                    <span className="text-[10px] font-bold font-mono text-slate-300 tracking-tighter uppercase">⌘ + ENTER TO BROADCAST</span>
                 </div>
             </footer>
         </div>
